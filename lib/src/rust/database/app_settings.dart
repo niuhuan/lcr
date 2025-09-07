@@ -23,5 +23,6 @@ sealed class AppSettings with _$AppSettings {
     required int coverHeight,
     required bool annotation,
     required bool fullScreenRemoveBars,
+    required bool enableVolumeControl,
   }) = _AppSettings;
 }

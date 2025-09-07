@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lcr/screens/components/comic_image_provider.dart';
+import 'package:lcr/screens/components/keyboard_controller.dart';
 import 'package:lcr/screens/select_chapter_screen.dart';
 import 'package:lcr/src/rust/api/backend.dart';
 import 'package:photo_view/photo_view.dart';
@@ -253,11 +254,27 @@ abstract class _ReaderState extends State<Reader> {
   @override
   void initState() {
     super.initState();
+    if (appSettings.enableVolumeControl) {
+      addVolumeListen();
+      readerControllerEvent.subscribe(_onController);
+    }
   }
 
   @override
   void dispose() {
+    if (appSettings.enableVolumeControl) {
+      delVolumeListen();
+      readerControllerEvent.unsubscribe(_onController);
+    }
     super.dispose();
+  }
+
+  void _onController(ReaderControllerEventArgs args) {
+    if (args.key == "UP") {
+      onPrevious();
+    } else if (args.key == "DOWN") {
+      onNext();
+    }
   }
 
   @override
@@ -410,6 +427,8 @@ abstract class _ReaderState extends State<Reader> {
 
   Widget buildContent();
 
+  FutureOr<dynamic> onPrevious();
+
   FutureOr<dynamic> onNext();
 
   FutureOr<dynamic> jumpTo(int index);
@@ -552,6 +571,62 @@ class _WebtoonReaderState extends _ReaderState {
   }
 
   @override
+  Future onPrevious() async {
+    final currentScroll = _scrollController.offset;
+    if (currentScroll <= 0) {
+      return;
+    }
+    if ("Screen" == widget.settings.scrollType) {
+      var target =
+          currentScroll -
+          (horizontal ? _maxWidth : _maxHeight) *
+              widget.settings.scrollPercent /
+              100;
+      target = max(target, 0);
+      if (widget.settings.annotation) {
+        _scrollController.animateTo(
+          target,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
+    }
+    if ("Page" == widget.settings.scrollType) {
+      var currentIndex = 0;
+      var acc = 0.0;
+      for (var i = 0; i < _imageLens.length; i++) {
+        acc += _imageLens[i];
+        if (acc >= currentScroll + 0.1) {
+          currentIndex = i;
+          break;
+        }
+      }
+      if (currentIndex <= 0) {
+        return;
+      }
+      var targetIndex =
+          currentIndex - (widget.settings.scrollPercent > 0 ? 1 : 0);
+      targetIndex = max(targetIndex, 0);
+      var target = 0.0;
+      for (var i = 0; i < targetIndex; i++) {
+        target += _imageLens[i];
+      }
+      if (widget.settings.annotation) {
+        _scrollController.animateTo(
+          target,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
+    }
+
+  }
+
+  @override
   Future onNext() async {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
@@ -681,11 +756,29 @@ class _GalleryReaderState extends _ReaderState {
       reverse: widget.settings.readerDirection == "RightToLeft",
       pageOptions: _options,
       onPageChanged: _onPageChanged,
+      backgroundDecoration: BoxDecoration(
+        color: Color(widget.settings.backgroundColor),
+      ),
     );
   }
 
   _onPageChanged(int index) {
     super.onIndex(index);
+  }
+
+  @override
+  Future onPrevious() async {
+    if (sliderValue.value <= 0) {
+      return;
+    }
+    if (widget.settings.annotation) {
+      _controller.previousPage(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _controller.jumpToPage(sliderValue.value - 1);
+    }
   }
 
   @override

@@ -833,8 +833,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AppSettings dco_decode_app_settings(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 12)
-      throw Exception('unexpected arr length: expect 12 but see ${arr.length}');
+    if (arr.length != 13)
+      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
     return AppSettings(
       id: dco_decode_i_64(arr[0]),
       theme: dco_decode_String(arr[1]),
@@ -848,6 +848,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       coverHeight: dco_decode_i_32(arr[9]),
       annotation: dco_decode_bool(arr[10]),
       fullScreenRemoveBars: dco_decode_bool(arr[11]),
+      enableVolumeControl: dco_decode_bool(arr[12]),
     );
   }
 
@@ -993,8 +994,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ReaderSettings dco_decode_reader_settings(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 17)
-      throw Exception('unexpected arr length: expect 17 but see ${arr.length}');
+    if (arr.length != 16)
+      throw Exception('unexpected arr length: expect 16 but see ${arr.length}');
     return ReaderSettings(
       id: dco_decode_i_64(arr[0]),
       settingsType: dco_decode_String(arr[1]),
@@ -1009,10 +1010,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       marginBottom: dco_decode_i_64(arr[10]),
       marginLeft: dco_decode_i_64(arr[11]),
       marginRight: dco_decode_i_64(arr[12]),
-      enableVolumeControl: dco_decode_bool(arr[13]),
-      annotation: dco_decode_bool(arr[14]),
-      scrollType: dco_decode_String(arr[15]),
-      scrollPercent: dco_decode_i_64(arr[16]),
+      annotation: dco_decode_bool(arr[13]),
+      scrollType: dco_decode_String(arr[14]),
+      scrollPercent: dco_decode_i_64(arr[15]),
     );
   }
 
@@ -1065,6 +1065,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_coverHeight = sse_decode_i_32(deserializer);
     var var_annotation = sse_decode_bool(deserializer);
     var var_fullScreenRemoveBars = sse_decode_bool(deserializer);
+    var var_enableVolumeControl = sse_decode_bool(deserializer);
     return AppSettings(
       id: var_id,
       theme: var_theme,
@@ -1078,6 +1079,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       coverHeight: var_coverHeight,
       annotation: var_annotation,
       fullScreenRemoveBars: var_fullScreenRemoveBars,
+      enableVolumeControl: var_enableVolumeControl,
     );
   }
 
@@ -1301,7 +1303,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_marginBottom = sse_decode_i_64(deserializer);
     var var_marginLeft = sse_decode_i_64(deserializer);
     var var_marginRight = sse_decode_i_64(deserializer);
-    var var_enableVolumeControl = sse_decode_bool(deserializer);
     var var_annotation = sse_decode_bool(deserializer);
     var var_scrollType = sse_decode_String(deserializer);
     var var_scrollPercent = sse_decode_i_64(deserializer);
@@ -1319,7 +1320,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       marginBottom: var_marginBottom,
       marginLeft: var_marginLeft,
       marginRight: var_marginRight,
-      enableVolumeControl: var_enableVolumeControl,
       annotation: var_annotation,
       scrollType: var_scrollType,
       scrollPercent: var_scrollPercent,
@@ -1384,6 +1384,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.coverHeight, serializer);
     sse_encode_bool(self.annotation, serializer);
     sse_encode_bool(self.fullScreenRemoveBars, serializer);
+    sse_encode_bool(self.enableVolumeControl, serializer);
   }
 
   @protected
@@ -1576,7 +1577,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_64(self.marginBottom, serializer);
     sse_encode_i_64(self.marginLeft, serializer);
     sse_encode_i_64(self.marginRight, serializer);
-    sse_encode_bool(self.enableVolumeControl, serializer);
     sse_encode_bool(self.annotation, serializer);
     sse_encode_String(self.scrollType, serializer);
     sse_encode_i_64(self.scrollPercent, serializer);

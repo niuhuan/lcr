@@ -19,6 +19,7 @@ pub struct Model {
     pub cover_height: i32,                  // 封面高度
     pub annotation: bool,                   // 翻页动画类型
     pub full_screen_remove_bars: bool,      // 全屏时隐藏状态栏和导航栏
+    pub enable_volume_control: bool,        // 是否启用音量控制
 }
 
 pub type AppSettings = Model;

@@ -46,6 +46,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   photo_view: ^0.15.0
   flutter_colorpicker: ^1.1.0
+  event: ^3.1.0
 
 dev_dependencies:
   flutter_test:

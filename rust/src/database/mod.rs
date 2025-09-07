@@ -46,6 +46,7 @@ async fn init_data(db: &DatabaseConnection) -> Result<()> {
             cover_height: 150,
             annotation: true,
             full_screen_remove_bars: false,
+            enable_volume_control: false,
         };
         AppSettingsEntity::insert(app_settings.into_active_model())
             .exec(db)
@@ -67,7 +68,6 @@ async fn init_data(db: &DatabaseConnection) -> Result<()> {
             margin_bottom: 0,
             margin_left: 0,
             margin_right: 0,
-            enable_volume_control: true,
             annotation: false,
             scroll_type: "Page".to_string(),
             scroll_percent: 60,

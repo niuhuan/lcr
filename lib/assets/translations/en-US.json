@@ -62,7 +62,8 @@
         "theme": "Theme",
         "dark_theme": "Dark theme",
         "image_filter": "Image Filter",
-        "full_screen_remove_bars": "Remove status bar and navigation bar when full screen"
+        "full_screen_remove_bars": "Remove status bar and navigation bar when full screen",
+        "enable_volume_control": "Enable volume control"
     },
     "theme": {
         "light": "Light",

@@ -62,7 +62,8 @@
         "theme": "主題",
         "dark_theme": "暗色主題",
         "image_filter": "圖像濾鏡",
-        "full_screen_remove_bars": "全屏時隱藏狀態欄和導航欄"
+        "full_screen_remove_bars": "全屏時隱藏狀態欄和導航欄",
+        "enable_volume_control": "啟用音量鍵控制翻頁"
     },
     "theme": {
         "light": "亮色",

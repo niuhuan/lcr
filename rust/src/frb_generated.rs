@@ -843,6 +843,7 @@ const _: fn() = || {
         let _: i32 = AppSettings.cover_height;
         let _: bool = AppSettings.annotation;
         let _: bool = AppSettings.full_screen_remove_bars;
+        let _: bool = AppSettings.enable_volume_control;
     }
     {
         let ComicChapter = None::<crate::database::comic_chapter::ComicChapter>.unwrap();
@@ -879,7 +880,6 @@ const _: fn() = || {
         let _: i64 = ReaderSettings.margin_bottom;
         let _: i64 = ReaderSettings.margin_left;
         let _: i64 = ReaderSettings.margin_right;
-        let _: bool = ReaderSettings.enable_volume_control;
         let _: bool = ReaderSettings.annotation;
         let _: String = ReaderSettings.scroll_type;
         let _: i64 = ReaderSettings.scroll_percent;
@@ -927,6 +927,7 @@ impl SseDecode for crate::database::app_settings::AppSettings {
         let mut var_coverHeight = <i32>::sse_decode(deserializer);
         let mut var_annotation = <bool>::sse_decode(deserializer);
         let mut var_fullScreenRemoveBars = <bool>::sse_decode(deserializer);
+        let mut var_enableVolumeControl = <bool>::sse_decode(deserializer);
         return crate::database::app_settings::AppSettings {
             id: var_id,
             theme: var_theme,
@@ -940,6 +941,7 @@ impl SseDecode for crate::database::app_settings::AppSettings {
             cover_height: var_coverHeight,
             annotation: var_annotation,
             full_screen_remove_bars: var_fullScreenRemoveBars,
+            enable_volume_control: var_enableVolumeControl,
         };
     }
 }
@@ -1153,7 +1155,6 @@ impl SseDecode for crate::database::reader_settings::ReaderSettings {
         let mut var_marginBottom = <i64>::sse_decode(deserializer);
         let mut var_marginLeft = <i64>::sse_decode(deserializer);
         let mut var_marginRight = <i64>::sse_decode(deserializer);
-        let mut var_enableVolumeControl = <bool>::sse_decode(deserializer);
         let mut var_annotation = <bool>::sse_decode(deserializer);
         let mut var_scrollType = <String>::sse_decode(deserializer);
         let mut var_scrollPercent = <i64>::sse_decode(deserializer);
@@ -1171,7 +1172,6 @@ impl SseDecode for crate::database::reader_settings::ReaderSettings {
             margin_bottom: var_marginBottom,
             margin_left: var_marginLeft,
             margin_right: var_marginRight,
-            enable_volume_control: var_enableVolumeControl,
             annotation: var_annotation,
             scroll_type: var_scrollType,
             scroll_percent: var_scrollPercent,
@@ -1281,6 +1281,7 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<crate::database::app_settings:
             self.0.cover_height.into_into_dart().into_dart(),
             self.0.annotation.into_into_dart().into_dart(),
             self.0.full_screen_remove_bars.into_into_dart().into_dart(),
+            self.0.enable_volume_control.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1402,7 +1403,6 @@ impl flutter_rust_bridge::IntoDart
             self.0.margin_bottom.into_into_dart().into_dart(),
             self.0.margin_left.into_into_dart().into_dart(),
             self.0.margin_right.into_into_dart().into_dart(),
-            self.0.enable_volume_control.into_into_dart().into_dart(),
             self.0.annotation.into_into_dart().into_dart(),
             self.0.scroll_type.into_into_dart().into_dart(),
             self.0.scroll_percent.into_into_dart().into_dart(),
@@ -1458,6 +1458,7 @@ impl SseEncode for crate::database::app_settings::AppSettings {
         <i32>::sse_encode(self.cover_height, serializer);
         <bool>::sse_encode(self.annotation, serializer);
         <bool>::sse_encode(self.full_screen_remove_bars, serializer);
+        <bool>::sse_encode(self.enable_volume_control, serializer);
     }
 }
 
@@ -1616,7 +1617,6 @@ impl SseEncode for crate::database::reader_settings::ReaderSettings {
         <i64>::sse_encode(self.margin_bottom, serializer);
         <i64>::sse_encode(self.margin_left, serializer);
         <i64>::sse_encode(self.margin_right, serializer);
-        <bool>::sse_encode(self.enable_volume_control, serializer);
         <bool>::sse_encode(self.annotation, serializer);
         <String>::sse_encode(self.scroll_type, serializer);
         <i64>::sse_encode(self.scroll_percent, serializer);

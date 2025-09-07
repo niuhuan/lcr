@@ -19,6 +19,7 @@ final appSettingsSignal = signal<AppSettings>(
     coverHeight: 150,
     annotation: true,
     fullScreenRemoveBars: false,
+    enableVolumeControl: false,
   ),
 );
 

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppSettings {
 
- PlatformInt64 get id; String get theme; String get darkTheme; bool get copySkipConfirm; String get copyComicTitleTemplate; bool get autoFullScreenIntoReader; String get bookListType; int get fontScalePercent; int get coverWidth; int get coverHeight; bool get annotation; bool get fullScreenRemoveBars;
+ PlatformInt64 get id; String get theme; String get darkTheme; bool get copySkipConfirm; String get copyComicTitleTemplate; bool get autoFullScreenIntoReader; String get bookListType; int get fontScalePercent; int get coverWidth; int get coverHeight; bool get annotation; bool get fullScreenRemoveBars; bool get enableVolumeControl;
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $AppSettingsCopyWith<AppSettings> get copyWith => _$AppSettingsCopyWithImpl<AppS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.id, id) || other.id == id)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.darkTheme, darkTheme) || other.darkTheme == darkTheme)&&(identical(other.copySkipConfirm, copySkipConfirm) || other.copySkipConfirm == copySkipConfirm)&&(identical(other.copyComicTitleTemplate, copyComicTitleTemplate) || other.copyComicTitleTemplate == copyComicTitleTemplate)&&(identical(other.autoFullScreenIntoReader, autoFullScreenIntoReader) || other.autoFullScreenIntoReader == autoFullScreenIntoReader)&&(identical(other.bookListType, bookListType) || other.bookListType == bookListType)&&(identical(other.fontScalePercent, fontScalePercent) || other.fontScalePercent == fontScalePercent)&&(identical(other.coverWidth, coverWidth) || other.coverWidth == coverWidth)&&(identical(other.coverHeight, coverHeight) || other.coverHeight == coverHeight)&&(identical(other.annotation, annotation) || other.annotation == annotation)&&(identical(other.fullScreenRemoveBars, fullScreenRemoveBars) || other.fullScreenRemoveBars == fullScreenRemoveBars));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.id, id) || other.id == id)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.darkTheme, darkTheme) || other.darkTheme == darkTheme)&&(identical(other.copySkipConfirm, copySkipConfirm) || other.copySkipConfirm == copySkipConfirm)&&(identical(other.copyComicTitleTemplate, copyComicTitleTemplate) || other.copyComicTitleTemplate == copyComicTitleTemplate)&&(identical(other.autoFullScreenIntoReader, autoFullScreenIntoReader) || other.autoFullScreenIntoReader == autoFullScreenIntoReader)&&(identical(other.bookListType, bookListType) || other.bookListType == bookListType)&&(identical(other.fontScalePercent, fontScalePercent) || other.fontScalePercent == fontScalePercent)&&(identical(other.coverWidth, coverWidth) || other.coverWidth == coverWidth)&&(identical(other.coverHeight, coverHeight) || other.coverHeight == coverHeight)&&(identical(other.annotation, annotation) || other.annotation == annotation)&&(identical(other.fullScreenRemoveBars, fullScreenRemoveBars) || other.fullScreenRemoveBars == fullScreenRemoveBars)&&(identical(other.enableVolumeControl, enableVolumeControl) || other.enableVolumeControl == enableVolumeControl));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,theme,darkTheme,copySkipConfirm,copyComicTitleTemplate,autoFullScreenIntoReader,bookListType,fontScalePercent,coverWidth,coverHeight,annotation,fullScreenRemoveBars);
+int get hashCode => Object.hash(runtimeType,id,theme,darkTheme,copySkipConfirm,copyComicTitleTemplate,autoFullScreenIntoReader,bookListType,fontScalePercent,coverWidth,coverHeight,annotation,fullScreenRemoveBars,enableVolumeControl);
 
 @override
 String toString() {
-  return 'AppSettings(id: $id, theme: $theme, darkTheme: $darkTheme, copySkipConfirm: $copySkipConfirm, copyComicTitleTemplate: $copyComicTitleTemplate, autoFullScreenIntoReader: $autoFullScreenIntoReader, bookListType: $bookListType, fontScalePercent: $fontScalePercent, coverWidth: $coverWidth, coverHeight: $coverHeight, annotation: $annotation, fullScreenRemoveBars: $fullScreenRemoveBars)';
+  return 'AppSettings(id: $id, theme: $theme, darkTheme: $darkTheme, copySkipConfirm: $copySkipConfirm, copyComicTitleTemplate: $copyComicTitleTemplate, autoFullScreenIntoReader: $autoFullScreenIntoReader, bookListType: $bookListType, fontScalePercent: $fontScalePercent, coverWidth: $coverWidth, coverHeight: $coverHeight, annotation: $annotation, fullScreenRemoveBars: $fullScreenRemoveBars, enableVolumeControl: $enableVolumeControl)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $AppSettingsCopyWith<$Res>  {
   factory $AppSettingsCopyWith(AppSettings value, $Res Function(AppSettings) _then) = _$AppSettingsCopyWithImpl;
 @useResult
 $Res call({
- PlatformInt64 id, String theme, String darkTheme, bool copySkipConfirm, String copyComicTitleTemplate, bool autoFullScreenIntoReader, String bookListType, int fontScalePercent, int coverWidth, int coverHeight, bool annotation, bool fullScreenRemoveBars
+ PlatformInt64 id, String theme, String darkTheme, bool copySkipConfirm, String copyComicTitleTemplate, bool autoFullScreenIntoReader, String bookListType, int fontScalePercent, int coverWidth, int coverHeight, bool annotation, bool fullScreenRemoveBars, bool enableVolumeControl
 });
 
 
@@ -62,7 +62,7 @@ class _$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? theme = null,Object? darkTheme = null,Object? copySkipConfirm = null,Object? copyComicTitleTemplate = null,Object? autoFullScreenIntoReader = null,Object? bookListType = null,Object? fontScalePercent = null,Object? coverWidth = null,Object? coverHeight = null,Object? annotation = null,Object? fullScreenRemoveBars = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? theme = null,Object? darkTheme = null,Object? copySkipConfirm = null,Object? copyComicTitleTemplate = null,Object? autoFullScreenIntoReader = null,Object? bookListType = null,Object? fontScalePercent = null,Object? coverWidth = null,Object? coverHeight = null,Object? annotation = null,Object? fullScreenRemoveBars = null,Object? enableVolumeControl = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as PlatformInt64,theme: null == theme ? _self.theme : theme // ignore: cast_nullable_to_non_nullable
@@ -76,6 +76,7 @@ as int,coverWidth: null == coverWidth ? _self.coverWidth : coverWidth // ignore:
 as int,coverHeight: null == coverHeight ? _self.coverHeight : coverHeight // ignore: cast_nullable_to_non_nullable
 as int,annotation: null == annotation ? _self.annotation : annotation // ignore: cast_nullable_to_non_nullable
 as bool,fullScreenRemoveBars: null == fullScreenRemoveBars ? _self.fullScreenRemoveBars : fullScreenRemoveBars // ignore: cast_nullable_to_non_nullable
+as bool,enableVolumeControl: null == enableVolumeControl ? _self.enableVolumeControl : enableVolumeControl // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PlatformInt64 id,  String theme,  String darkTheme,  bool copySkipConfirm,  String copyComicTitleTemplate,  bool autoFullScreenIntoReader,  String bookListType,  int fontScalePercent,  int coverWidth,  int coverHeight,  bool annotation,  bool fullScreenRemoveBars)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PlatformInt64 id,  String theme,  String darkTheme,  bool copySkipConfirm,  String copyComicTitleTemplate,  bool autoFullScreenIntoReader,  String bookListType,  int fontScalePercent,  int coverWidth,  int coverHeight,  bool annotation,  bool fullScreenRemoveBars,  bool enableVolumeControl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that.copyComicTitleTemplate,_that.autoFullScreenIntoReader,_that.bookListType,_that.fontScalePercent,_that.coverWidth,_that.coverHeight,_that.annotation,_that.fullScreenRemoveBars);case _:
+return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that.copyComicTitleTemplate,_that.autoFullScreenIntoReader,_that.bookListType,_that.fontScalePercent,_that.coverWidth,_that.coverHeight,_that.annotation,_that.fullScreenRemoveBars,_that.enableVolumeControl);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PlatformInt64 id,  String theme,  String darkTheme,  bool copySkipConfirm,  String copyComicTitleTemplate,  bool autoFullScreenIntoReader,  String bookListType,  int fontScalePercent,  int coverWidth,  int coverHeight,  bool annotation,  bool fullScreenRemoveBars)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PlatformInt64 id,  String theme,  String darkTheme,  bool copySkipConfirm,  String copyComicTitleTemplate,  bool autoFullScreenIntoReader,  String bookListType,  int fontScalePercent,  int coverWidth,  int coverHeight,  bool annotation,  bool fullScreenRemoveBars,  bool enableVolumeControl)  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings():
-return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that.copyComicTitleTemplate,_that.autoFullScreenIntoReader,_that.bookListType,_that.fontScalePercent,_that.coverWidth,_that.coverHeight,_that.annotation,_that.fullScreenRemoveBars);}
+return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that.copyComicTitleTemplate,_that.autoFullScreenIntoReader,_that.bookListType,_that.fontScalePercent,_that.coverWidth,_that.coverHeight,_that.annotation,_that.fullScreenRemoveBars,_that.enableVolumeControl);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -196,10 +197,10 @@ return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PlatformInt64 id,  String theme,  String darkTheme,  bool copySkipConfirm,  String copyComicTitleTemplate,  bool autoFullScreenIntoReader,  String bookListType,  int fontScalePercent,  int coverWidth,  int coverHeight,  bool annotation,  bool fullScreenRemoveBars)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PlatformInt64 id,  String theme,  String darkTheme,  bool copySkipConfirm,  String copyComicTitleTemplate,  bool autoFullScreenIntoReader,  String bookListType,  int fontScalePercent,  int coverWidth,  int coverHeight,  bool annotation,  bool fullScreenRemoveBars,  bool enableVolumeControl)?  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that.copyComicTitleTemplate,_that.autoFullScreenIntoReader,_that.bookListType,_that.fontScalePercent,_that.coverWidth,_that.coverHeight,_that.annotation,_that.fullScreenRemoveBars);case _:
+return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that.copyComicTitleTemplate,_that.autoFullScreenIntoReader,_that.bookListType,_that.fontScalePercent,_that.coverWidth,_that.coverHeight,_that.annotation,_that.fullScreenRemoveBars,_that.enableVolumeControl);case _:
   return null;
 
 }
@@ -211,7 +212,7 @@ return $default(_that.id,_that.theme,_that.darkTheme,_that.copySkipConfirm,_that
 
 
 class _AppSettings implements AppSettings {
-  const _AppSettings({required this.id, required this.theme, required this.darkTheme, required this.copySkipConfirm, required this.copyComicTitleTemplate, required this.autoFullScreenIntoReader, required this.bookListType, required this.fontScalePercent, required this.coverWidth, required this.coverHeight, required this.annotation, required this.fullScreenRemoveBars});
+  const _AppSettings({required this.id, required this.theme, required this.darkTheme, required this.copySkipConfirm, required this.copyComicTitleTemplate, required this.autoFullScreenIntoReader, required this.bookListType, required this.fontScalePercent, required this.coverWidth, required this.coverHeight, required this.annotation, required this.fullScreenRemoveBars, required this.enableVolumeControl});
   
 
 @override final  PlatformInt64 id;
@@ -226,6 +227,7 @@ class _AppSettings implements AppSettings {
 @override final  int coverHeight;
 @override final  bool annotation;
 @override final  bool fullScreenRemoveBars;
+@override final  bool enableVolumeControl;
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +239,16 @@ _$AppSettingsCopyWith<_AppSettings> get copyWith => __$AppSettingsCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.id, id) || other.id == id)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.darkTheme, darkTheme) || other.darkTheme == darkTheme)&&(identical(other.copySkipConfirm, copySkipConfirm) || other.copySkipConfirm == copySkipConfirm)&&(identical(other.copyComicTitleTemplate, copyComicTitleTemplate) || other.copyComicTitleTemplate == copyComicTitleTemplate)&&(identical(other.autoFullScreenIntoReader, autoFullScreenIntoReader) || other.autoFullScreenIntoReader == autoFullScreenIntoReader)&&(identical(other.bookListType, bookListType) || other.bookListType == bookListType)&&(identical(other.fontScalePercent, fontScalePercent) || other.fontScalePercent == fontScalePercent)&&(identical(other.coverWidth, coverWidth) || other.coverWidth == coverWidth)&&(identical(other.coverHeight, coverHeight) || other.coverHeight == coverHeight)&&(identical(other.annotation, annotation) || other.annotation == annotation)&&(identical(other.fullScreenRemoveBars, fullScreenRemoveBars) || other.fullScreenRemoveBars == fullScreenRemoveBars));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.id, id) || other.id == id)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.darkTheme, darkTheme) || other.darkTheme == darkTheme)&&(identical(other.copySkipConfirm, copySkipConfirm) || other.copySkipConfirm == copySkipConfirm)&&(identical(other.copyComicTitleTemplate, copyComicTitleTemplate) || other.copyComicTitleTemplate == copyComicTitleTemplate)&&(identical(other.autoFullScreenIntoReader, autoFullScreenIntoReader) || other.autoFullScreenIntoReader == autoFullScreenIntoReader)&&(identical(other.bookListType, bookListType) || other.bookListType == bookListType)&&(identical(other.fontScalePercent, fontScalePercent) || other.fontScalePercent == fontScalePercent)&&(identical(other.coverWidth, coverWidth) || other.coverWidth == coverWidth)&&(identical(other.coverHeight, coverHeight) || other.coverHeight == coverHeight)&&(identical(other.annotation, annotation) || other.annotation == annotation)&&(identical(other.fullScreenRemoveBars, fullScreenRemoveBars) || other.fullScreenRemoveBars == fullScreenRemoveBars)&&(identical(other.enableVolumeControl, enableVolumeControl) || other.enableVolumeControl == enableVolumeControl));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,theme,darkTheme,copySkipConfirm,copyComicTitleTemplate,autoFullScreenIntoReader,bookListType,fontScalePercent,coverWidth,coverHeight,annotation,fullScreenRemoveBars);
+int get hashCode => Object.hash(runtimeType,id,theme,darkTheme,copySkipConfirm,copyComicTitleTemplate,autoFullScreenIntoReader,bookListType,fontScalePercent,coverWidth,coverHeight,annotation,fullScreenRemoveBars,enableVolumeControl);
 
 @override
 String toString() {
-  return 'AppSettings(id: $id, theme: $theme, darkTheme: $darkTheme, copySkipConfirm: $copySkipConfirm, copyComicTitleTemplate: $copyComicTitleTemplate, autoFullScreenIntoReader: $autoFullScreenIntoReader, bookListType: $bookListType, fontScalePercent: $fontScalePercent, coverWidth: $coverWidth, coverHeight: $coverHeight, annotation: $annotation, fullScreenRemoveBars: $fullScreenRemoveBars)';
+  return 'AppSettings(id: $id, theme: $theme, darkTheme: $darkTheme, copySkipConfirm: $copySkipConfirm, copyComicTitleTemplate: $copyComicTitleTemplate, autoFullScreenIntoReader: $autoFullScreenIntoReader, bookListType: $bookListType, fontScalePercent: $fontScalePercent, coverWidth: $coverWidth, coverHeight: $coverHeight, annotation: $annotation, fullScreenRemoveBars: $fullScreenRemoveBars, enableVolumeControl: $enableVolumeControl)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$AppSettingsCopyWith<$Res> implements $AppSettingsCopyWith
   factory _$AppSettingsCopyWith(_AppSettings value, $Res Function(_AppSettings) _then) = __$AppSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- PlatformInt64 id, String theme, String darkTheme, bool copySkipConfirm, String copyComicTitleTemplate, bool autoFullScreenIntoReader, String bookListType, int fontScalePercent, int coverWidth, int coverHeight, bool annotation, bool fullScreenRemoveBars
+ PlatformInt64 id, String theme, String darkTheme, bool copySkipConfirm, String copyComicTitleTemplate, bool autoFullScreenIntoReader, String bookListType, int fontScalePercent, int coverWidth, int coverHeight, bool annotation, bool fullScreenRemoveBars, bool enableVolumeControl
 });
 
 
@@ -274,7 +276,7 @@ class __$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? theme = null,Object? darkTheme = null,Object? copySkipConfirm = null,Object? copyComicTitleTemplate = null,Object? autoFullScreenIntoReader = null,Object? bookListType = null,Object? fontScalePercent = null,Object? coverWidth = null,Object? coverHeight = null,Object? annotation = null,Object? fullScreenRemoveBars = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? theme = null,Object? darkTheme = null,Object? copySkipConfirm = null,Object? copyComicTitleTemplate = null,Object? autoFullScreenIntoReader = null,Object? bookListType = null,Object? fontScalePercent = null,Object? coverWidth = null,Object? coverHeight = null,Object? annotation = null,Object? fullScreenRemoveBars = null,Object? enableVolumeControl = null,}) {
   return _then(_AppSettings(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as PlatformInt64,theme: null == theme ? _self.theme : theme // ignore: cast_nullable_to_non_nullable
@@ -288,6 +290,7 @@ as int,coverWidth: null == coverWidth ? _self.coverWidth : coverWidth // ignore:
 as int,coverHeight: null == coverHeight ? _self.coverHeight : coverHeight // ignore: cast_nullable_to_non_nullable
 as int,annotation: null == annotation ? _self.annotation : annotation // ignore: cast_nullable_to_non_nullable
 as bool,fullScreenRemoveBars: null == fullScreenRemoveBars ? _self.fullScreenRemoveBars : fullScreenRemoveBars // ignore: cast_nullable_to_non_nullable
+as bool,enableVolumeControl: null == enableVolumeControl ? _self.enableVolumeControl : enableVolumeControl // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

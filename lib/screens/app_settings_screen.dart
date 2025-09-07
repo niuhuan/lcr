@@ -87,6 +87,17 @@ class AppSettingsScreen extends StatelessWidget {
                   await saveAppSettings(appSettings: appSettingsSignal.value);
                 },
               ),
+            if (Platform.isAndroid)
+              SwitchListTile(
+                title: Text(tr('settings.enable_volume_control')),
+                value: appSettings.enableVolumeControl,
+                onChanged: (value) async {
+                  appSettingsSignal.value = appSettings.copyWith(
+                    enableVolumeControl: value,
+                  );
+                  await saveAppSettings(appSettings: appSettingsSignal.value);
+                },
+              ),
           ],
         ),
       );

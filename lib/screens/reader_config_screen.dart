@@ -63,7 +63,6 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
         marginBottom: settings.marginBottom,
         marginLeft: settings.marginLeft,
         marginRight: settings.marginRight,
-        enableVolumeControl: settings.enableVolumeControl,
         annotation: settings.annotation,
         scrollType: settings.scrollType,
         scrollPercent: settings.scrollPercent,

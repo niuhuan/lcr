@@ -20,7 +20,6 @@ pub struct Model {
     pub margin_bottom: i64,    // 下边距
     pub margin_left: i64,      // 左边距
     pub margin_right: i64,     // 右边距
-    pub enable_volume_control: bool, // 是否启用音量控制
     pub annotation: bool,      // 翻页动画类型
     pub scroll_type: String,   // 滚动类型
     pub scroll_percent: i64,   // 滚动百分比
@@ -74,7 +73,6 @@ impl Entity {
             active_model.margin_bottom = Set(model.margin_bottom);
             active_model.margin_left = Set(model.margin_left);
             active_model.margin_right = Set(model.margin_right);
-            active_model.enable_volume_control = Set(model.enable_volume_control);
             active_model.annotation = Set(model.annotation);
             active_model.scroll_type = Set(model.scroll_type);
             active_model.scroll_percent = Set(model.scroll_percent);

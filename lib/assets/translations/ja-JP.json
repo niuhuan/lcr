@@ -62,7 +62,8 @@
         "theme": "テーマ",
         "dark_theme": "暗色テーマ",
         "image_filter": "画像フィルタ",
-        "full_screen_remove_bars": "全屏時隱藏状態欄とナビゲーションバー"
+        "full_screen_remove_bars": "全屏時隱藏状態欄とナビゲーションバー",
+        "enable_volume_control": "音量キーでページ切り替え"
     },
     "theme": {
         "light": "ライト",

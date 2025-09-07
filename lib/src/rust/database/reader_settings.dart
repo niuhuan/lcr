@@ -20,7 +20,6 @@ class ReaderSettings {
   final PlatformInt64 marginBottom;
   final PlatformInt64 marginLeft;
   final PlatformInt64 marginRight;
-  final bool enableVolumeControl;
   final bool annotation;
   final String scrollType;
   final PlatformInt64 scrollPercent;
@@ -39,7 +38,6 @@ class ReaderSettings {
     required this.marginBottom,
     required this.marginLeft,
     required this.marginRight,
-    required this.enableVolumeControl,
     required this.annotation,
     required this.scrollType,
     required this.scrollPercent,
@@ -60,7 +58,6 @@ class ReaderSettings {
       marginBottom.hashCode ^
       marginLeft.hashCode ^
       marginRight.hashCode ^
-      enableVolumeControl.hashCode ^
       annotation.hashCode ^
       scrollType.hashCode ^
       scrollPercent.hashCode;
@@ -83,7 +80,6 @@ class ReaderSettings {
           marginBottom == other.marginBottom &&
           marginLeft == other.marginLeft &&
           marginRight == other.marginRight &&
-          enableVolumeControl == other.enableVolumeControl &&
           annotation == other.annotation &&
           scrollType == other.scrollType &&
           scrollPercent == other.scrollPercent;
