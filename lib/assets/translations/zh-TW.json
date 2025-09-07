@@ -1,0 +1,71 @@
+{
+    "general": {
+        "appName": "閱讀器",
+        "confirm": "確認",
+        "cancel": "取消",
+        "initializing": "初始化中...",
+        "loading": "加載中...",
+        "empty": "沒有數據",
+        "save": "保存",
+        "star": "收藏",
+        "title": "標題",
+        "author": "作者",
+        "tags": "標籤",
+        "description": "描述",
+        "published_date": "發布日期",
+        "import_time": "導入時間",
+        "last_read_time": "最後閱讀時間",
+        "last_read_chapter_id": "最後閱讀章節ID",
+        "last_read_chapter_title": "最後閱讀章節標題",
+        "last_read_page_index": "最後閱讀頁碼",
+        "global_config": "全局配置",
+        "reset_not_save": "未保存的修改將丟失",
+        "app_settings": "應用程序設置",
+        "delete": "刪除",
+        "delete_content": "刪除內容"
+    },
+    "import": {
+        "title": "導入漫畫",
+        "import_files_button": "導入漫畫(ZIP、CBZ、EPUB)",
+        "import_success_comic": "成功導入的漫畫",
+        "import_fail_file": "導入失敗的文件",
+        "import_folder_button": "導入文件夾內的所有圖片"
+    },
+    "edit_comic_info": {
+        "title": "編輯漫畫信息"
+    },
+    "reader": {
+        "last_read": "最後閱讀",
+        "reader_config": "閱讀器配置",
+        "create_comic_config": "創建漫畫配置",
+        "delete_comic_config_use_global": "刪除漫畫配置使用全局配置",
+        "create_comic_config_confirm": "為該漫畫創建單獨的閱讀器配置嗎？",
+        "delete_comic_config_use_global_confirm": "刪除該漫畫的閱讀器配置使用全局配置嗎？",
+        "reader_type": "閱讀器類型",
+        "webtoon": "長條",
+        "gallery": "相冊",
+        "current_config_type": "當前配置類型",
+        "comic_specific_config": "已創建漫畫特定配置",
+        "global_config": "正在使用全局配置",
+        "select_chapter": "選擇章節",
+        "background_color": "背景色",
+        "image_filter": {
+            "normal": "默认",
+            "grayscale": "灰度",
+            "brown": "棕色",
+            "srgbToLinearGamma": "sRGB to Linear Gamma",
+            "linearToSrgbGamma": "Linear to sRGB Gamma"
+        }
+    },
+    "settings": {
+        "ui_annotation": "UI動畫",
+        "theme": "主題",
+        "dark_theme": "暗色主題",
+        "image_filter": "圖像濾鏡",
+        "full_screen_remove_bars": "全屏時隱藏狀態欄和導航欄"
+    },
+    "theme": {
+        "light": "亮色",
+        "dark": "暗色"
+    }
+}

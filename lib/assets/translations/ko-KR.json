@@ -1,0 +1,71 @@
+{
+    "general": {
+        "appName": "Local Comic Reader",
+        "confirm": "확인",
+        "cancel": "취소",
+        "initializing": "초기화 중...",
+        "loading": "로딩중...",
+        "empty": "데이터가 없습니다",
+        "save": "저장",
+        "star": "즐겨찾기",
+        "title": "제목",
+        "author": "작가",
+        "tags": "태그",
+        "description": "설명",
+        "published_date": "발행일",
+        "import_time": "가져오기 시간",
+        "last_read_time": "마지막 읽은 시간",
+        "last_read_chapter_id": "마지막 읽은 챕터 ID",
+        "last_read_chapter_title": "마지막 읽은 챕터 제목",
+        "last_read_page_index": "마지막 읽은 페이지 인덱스",
+        "global_config": "전역 설정",
+        "reset_not_save": "저장되지 않은 수정은 손실됩니다",
+        "app_settings": "애플리케이션 설정",
+        "delete": "삭제",
+        "delete_content": "삭제 내용"
+    },
+    "import": {
+        "title": "만화 가져오기",
+        "import_files_button": "만화 가져오기(ZIP、CBZ、EPUB)",
+        "import_success_comic": "성공적으로 가져온 만화",
+        "import_fail_file": "가져오기 실패한 파일",
+        "import_folder_button": "폴더 내의 모든 이미지 가져오기"
+    },
+    "edit_comic_info": {
+        "title": "만화 정보 수정"
+    },
+    "reader": {
+        "last_read": "마지막 읽은",
+        "reader_config": "리더 설정",
+        "create_comic_config": "만화 설정 생성",
+        "delete_comic_config_use_global": "만화 설정 삭제 전역 설정 사용",
+        "create_comic_config_confirm": "해당 만화에 대한 별도의 리더 설정을 생성하시겠습니까?",
+        "delete_comic_config_use_global_confirm": "해당 만화의 리더 설정을 전역 설정으로 삭제하시겠습니까?",
+        "reader_type": "리더 타입",
+        "webtoon": "웹툰",
+        "gallery": "갤러리",
+        "current_config_type": "현재 설정 유형",
+        "comic_specific_config": "만화 특정 설정",
+        "global_config": "전역 설정 사용",
+        "select_chapter": "챕터 선택",
+        "background_color": "배경색",
+        "image_filter": {
+            "normal": "Normal",
+            "grayscale": "Grayscale",
+            "brown": "Brown",
+            "srgbToLinearGamma": "sRGB to Linear Gamma",
+            "linearToSrgbGamma": "Linear to sRGB Gamma"
+        }
+    },
+    "settings": {
+        "ui_annotation": "UI 애니메이션",
+        "theme": "테마",
+        "dark_theme": "어두운 테마",
+        "image_filter": "이미지 필터",
+        "full_screen_remove_bars": "전체 화면 상태 표시줄 제거"
+    },
+    "theme": {
+        "light": "라이트",
+        "dark": "다크"
+    }
+}

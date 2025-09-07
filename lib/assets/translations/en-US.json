@@ -1,0 +1,71 @@
+{
+    "general": {
+        "appName": "Local Comic Reader",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "initializing": "Initializing...",
+        "loading": "Loading...",
+        "empty": "No data",
+        "save": "Save",
+        "star": "Star",
+        "title": "Title",
+        "author": "Author",
+        "tags": "Tags",
+        "description": "Description",
+        "published_date": "Published Date",
+        "import_time": "Import Time",
+        "last_read_time": "Last Read Time",
+        "last_read_chapter_id": "Last Read Chapter ID",
+        "last_read_chapter_title": "Last Read Chapter Title",
+        "last_read_page_index": "Last Read Page Index",
+        "global_config": "Global Config",
+        "reset_not_save": "Unsaved changes will be lost",
+        "app_settings": "App Settings",
+        "delete": "Delete",
+        "delete_content": "Delete content"
+    },
+    "import": {
+        "title": "Import Comic",
+        "import_files_button": "Import Comic(ZIP, CBZ, EPUB)",
+        "import_success_comic": "Successfully imported comic",
+        "import_fail_file": "Failed to import file",
+        "import_folder_button": "Import all images in folder"
+    },
+    "edit_comic_info": {
+        "title": "Edit Comic Info"
+    },
+    "reader": {
+        "last_read": "Last read",
+        "reader_config": "Reader config",
+        "create_comic_config": "Create Comic config",
+        "delete_comic_config_use_global": "Delete Comic config Use Global",
+        "create_comic_config_confirm": "Create separate reader config for this comic?",
+        "delete_comic_config_use_global_confirm": "Delete reader config for this comic use global config?",
+        "reader_type": "Reader type",
+        "webtoon": "WebToon",
+        "gallery": "Gallery",
+        "current_config_type": "Current config type",
+        "comic_specific_config": "Comic specific config",
+        "global_config": "Global config",
+        "select_chapter": "Select chapter",
+        "background_color": "Background color",
+        "image_filter": {
+            "normal": "Normal",
+            "grayscale": "Grayscale",
+            "brown": "Brown",
+            "srgbToLinearGamma": "sRGB to Linear Gamma",
+            "linearToSrgbGamma": "Linear to sRGB Gamma"
+        }
+    },
+    "settings": {
+        "ui_annotation": "UI Animation",
+        "theme": "Theme",
+        "dark_theme": "Dark theme",
+        "image_filter": "Image Filter",
+        "full_screen_remove_bars": "Remove status bar and navigation bar when full screen"
+    },
+    "theme": {
+        "light": "Light",
+        "dark": "Dark"
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "general": {
+        "appName": "Local Comic Reader",
+        "confirm": "確認",
+        "cancel": "キャンセル",
+        "initializing": "初期化中...",
+        "loading": "読み込み中...",
+        "empty": "データがありません",
+        "save": "保存",
+        "star": "お気に入り",
+        "title": "タイトル",
+        "author": "作者",
+        "tags": "タグ",
+        "description": "説明",
+        "published_date": "発行日",
+        "import_time": "インポート時間",
+        "last_read_time": "最後読んだ時間",
+        "last_read_chapter_id": "最後読んだ章節ID",
+        "last_read_chapter_title": "最後読んだ章節タイトル",
+        "last_read_page_index": "最後読んだページインデックス",
+        "global_config": "グローバル設定",
+        "reset_not_save": "未保存の変更は失われます",
+        "app_settings": "アプリケーション設定",
+        "delete": "削除",
+        "delete_content": "削除内容"
+    },
+    "import": {
+        "title": "漫画をインポート",
+        "import_files_button": "漫画をインポート(ZIP、CBZ、EPUB)",
+        "import_success_comic": "成功インポートした漫画",
+        "import_fail_file": "インポート失敗したファイル",
+        "import_folder_button": "フォルダ内のすべての画像をインポート"
+    },
+    "edit_comic_info": {
+        "title": "漫画情報を編集"
+    },
+    "reader": {
+        "last_read": "最後読んだ",
+        "reader_config": "リーダー設定",
+        "create_comic_config": "漫画設定を作成",
+        "delete_comic_config_use_global": "漫画設定を削除 グローバル設定を使用",
+        "create_comic_config_confirm": "該当漫画に対して別のリーダー設定を作成しますか？",
+        "delete_comic_config_use_global_confirm": "該当漫画のリーダー設定をグローバル設定に削除しますか？",
+        "reader_type": "リーダータイプ",
+        "webtoon": "ウェブトゥーン",
+        "gallery": "ギャラリー",
+        "current_config_type": "現在の設定タイプ",
+        "comic_specific_config": "漫画特定設定",
+        "global_config": "グローバル設定使用",
+        "select_chapter": "章節選択",
+        "background_color": "背景色",
+        "image_filter": {
+            "normal": "通常",
+            "grayscale": "グレースケール",
+            "brown": "ブラウン",
+            "srgbToLinearGamma": "sRGB to Linear Gamma",
+            "linearToSrgbGamma": "Linear to sRGB Gamma"
+        }
+    },
+    "settings": {
+        "ui_annotation": "UI アニメーション",
+        "theme": "テーマ",
+        "dark_theme": "暗色テーマ",
+        "image_filter": "画像フィルタ",
+        "full_screen_remove_bars": "全屏時隱藏状態欄とナビゲーションバー"
+    },
+    "theme": {
+        "light": "ライト",
+        "dark": "ダーク"
+    }
+}
