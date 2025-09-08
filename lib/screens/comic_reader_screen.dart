@@ -734,6 +734,7 @@ class _GalleryReaderState extends _ReaderState {
               comicId: imageData.comicId,
               path: imageData.path,
             ),
+            filterQuality: FilterQuality.high,
           ),
         );
       } else {
