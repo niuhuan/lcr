@@ -4,5 +4,5 @@
 
 ## 截图
 
-<img src="images/screen_01.jpg" width="280" />
-<img src="images/screen_02.jpg" width="280" />
+<img src="images/screen_01.jpg" width="250" />
+<img src="images/screen_02.jpg" width="250" />
