@@ -99,6 +99,12 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     currentChapter.value = chapter;
     imgIndex.value = 0;
     images.value = await imageList(chapterId: chapter.id);
+    updateComicRead(
+      comicId: widget.comic.id,
+      chapterId: chapter.id,
+      chapterTitle: chapter.title,
+      pageIndex: imgIndex.value,
+    );
   }
 
   @override
