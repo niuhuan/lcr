@@ -623,7 +623,10 @@ async fn import_epub2(
                     .for_each(|img| {
                         if let Some(src) = img.value().attr("src") {
                             let mut src = src.to_string();
+                            
+                            // Handle relative paths
                             if src.starts_with("./") {
+                                // Handle "./" prefix
                                 let path = Path::new(href);
                                 let parent = path.parent().unwrap_or(Path::new(""));
                                 src = parent
@@ -631,14 +634,23 @@ async fn import_epub2(
                                     .to_string_lossy()
                                     .to_string();
                             } else if src.starts_with("../") {
-                                let path = Path::new(href);
-                                let parent = path.parent().unwrap_or(Path::new(""));
-                                let parent = parent.parent().unwrap_or(Path::new(""));
-                                src = parent
-                                    .join(src[3..].to_string())
+                                // Handle multi-level "../" prefixes
+                                let mut path = Path::new(href).parent().unwrap_or(Path::new(""));
+                                let mut remaining_src = src.as_str();
+                                
+                                // Count the number of "../" prefixes and navigate up accordingly
+                                while remaining_src.starts_with("../") {
+                                    path = path.parent().unwrap_or(Path::new(""));
+                                    remaining_src = &remaining_src[3..]; // Remove "../"
+                                }
+                                
+                                // Join the remaining path
+                                src = path
+                                    .join(remaining_src)
                                     .to_string_lossy()
                                     .to_string();
                             }
+                            
                             if resource_href_id_map.contains_key(&src) {
                                 image_hrefs.push(src);
                             }
