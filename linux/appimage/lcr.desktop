@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=lcr
+Comment=Comic Reader
+Exec=AppRun
+Icon=lcr
+Categories=Graphics;Viewer;
+StartupNotify=true
