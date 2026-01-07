@@ -84,7 +84,7 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
       }
     } catch (e) {
       // Handle error - could show a snackbar or dialog
-      print('Error saving reader settings: $e');
+      debugPrint('Error saving reader settings: $e');
     }
   }
 
@@ -99,7 +99,7 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
     return Watch((context) {
       return Scaffold(
         appBar: AppBar(title: Text(tr('reader.reader_config'))),
-        body: Column(
+        body: ListView(
           children: [
             ListTile(
               title:
@@ -127,9 +127,7 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
                     builder:
                         (context) => AlertDialog(
                           title: Text(tr('reader.create_comic_config')),
-                          content: Text(
-                            "${tr('reader.create_comic_config_confirm')}",
-                          ),
+                          content: Text(tr('reader.create_comic_config_confirm')),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
@@ -166,7 +164,7 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
                             tr('reader.delete_comic_config_use_global'),
                           ),
                           content: Text(
-                            "${tr('reader.delete_comic_config_use_global_confirm')}",
+                            tr('reader.delete_comic_config_use_global_confirm'),
                           ),
                           actions: [
                             TextButton(
@@ -222,7 +220,7 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
               }),
               onTap: () async {
                 Color pickerColor = Color(backgroundColor.value);
-                await showDialog(
+                final pickedColor = await showDialog<Color>(
                   context: context,
                   builder: (context) {
                     return StatefulBuilder(
@@ -240,11 +238,8 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
                           actions: <Widget>[
                             ElevatedButton(
                               child: const Text('Got it'),
-                              onPressed: () async {
-                                backgroundColor.value = pickerColor.toARGB32();
-                                await _saveReaderSettings();
-                                Navigator.of(context).pop();
-                              },
+                              onPressed:
+                                  () => Navigator.of(context).pop(pickerColor),
                             ),
                           ],
                         );
@@ -252,6 +247,10 @@ class _ReaderConfigScreenState extends State<ReaderConfigScreen> {
                     );
                   },
                 );
+                if (pickedColor != null) {
+                  backgroundColor.value = pickedColor.toARGB32();
+                  await _saveReaderSettings();
+                }
               },
             ),
             Watch((context) {

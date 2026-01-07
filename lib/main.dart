@@ -78,12 +78,13 @@ class _InitialScreenState extends State<InitialScreen> {
     }
     await initBackend(applicationSupportPath: contextDir);
     await initializeAppSettings();
-    if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        mixRoute(builder: (context) => AppScreen()),
-      );
+    if (!mounted) {
+      return;
     }
+    Navigator.pushReplacement(
+      context,
+      mixRoute(builder: (context) => AppScreen()),
+    );
   }
 
   @override

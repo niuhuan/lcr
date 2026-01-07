@@ -19,7 +19,7 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
   final _loading = signal<bool>(false);
   final _message = signal<String>("");
   final _successIdList = signal<List<ComicInfo>>([]);
-  final _failFileList = signal<List<String>>([]);
+  final _failFileList = signal<Map<String, String>>({});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
               onPressed: () {
                 _message.value = "";
                 _successIdList.value = [];
-                _failFileList.value = [];
+                _failFileList.value = {};
               },
               icon: Icon(Icons.add),
             )
@@ -116,7 +116,7 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
   Future _importFiles(List<String> filePaths) async {
     _loading.value = true;
     var successIdList = <String>[];
-    var failFileList = <String>[];
+    var failFileMap = <String, String>{};
     for (var filePath in filePaths) {
       var completeFuture = Completer<void>();
       var filename = filePath.split("/").last;
@@ -134,18 +134,24 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
             }
           },
           onDone: () {
-            completeFuture.complete();
+            if (!completeFuture.isCompleted) {
+              completeFuture.complete();
+            }
           },
           onError: (error) {
-            failFileList.add(filename);
-            // messages.add(error.toString());
-            completeFuture.complete();
+            var errorMessage = _extractErrorMessage(error);
+            print("导入失败: $filename - $errorMessage");
+            failFileMap[filename] = errorMessage;
+            if (!completeFuture.isCompleted) {
+              completeFuture.complete();
+            }
           },
         );
         await completeFuture.future;
       } catch (e) {
-        failFileList.add(filename);
-        // messages.add(error.toString());
+        var errorMessage = _extractErrorMessage(e);
+        print("导入失败: $filename - $errorMessage");
+        failFileMap[filename] = errorMessage;
       }
     }
     _message.value = tr("general.loading");
@@ -155,8 +161,13 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
         _successIdList.value = [..._successIdList.value, comic];
       }
     }
-    _failFileList.value = [..._failFileList.value, ...failFileList];
+    _failFileList.value = {..._failFileList.value, ...failFileMap};
     _loading.value = false;
+  }
+
+  String _extractErrorMessage(dynamic error) {
+    var errorStr = error.toString();
+    return errorStr;
   }
 
   Widget _resultWidget() {
@@ -176,7 +187,22 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
             tr("import.import_fail_file"),
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          ..._failFileList.value.map((e) => ListTile(title: Text(e))),
+          ..._failFileList.value.entries.map((e) => ExpansionTile(
+                title: Text(e.key),
+                subtitle: Text(
+                  e.value.length > 50 ? "${e.value.substring(0, 50)}..." : e.value,
+                  style: TextStyle(color: Colors.red),
+                ),
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      e.value,
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+                ],
+              )),
         ],
         SizedBox(height: 40),
       ],

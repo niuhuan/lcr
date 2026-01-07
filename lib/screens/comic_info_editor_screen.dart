@@ -217,6 +217,9 @@ class _ComicInfoEditorScreenState extends State<ComicInfoEditorScreen> {
     if (newCover.value.isNotEmpty) {
       await updateComicCover(comicId: id, source: newCover.value);
     }
+    if (!mounted) {
+      return;
+    }
     Navigator.of(context).pop(updatedComicModel);
   }
 }

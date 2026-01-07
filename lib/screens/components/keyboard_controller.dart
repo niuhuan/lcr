@@ -22,21 +22,19 @@ class ReaderControllerEventArgs extends EventArgs {
 Widget readerKeyboardHolder(Widget widget) {
   if (keyboardController &&
       (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
-    widget = RawKeyboardListener(
+    widget = KeyboardListener(
       focusNode: FocusNode(),
-      child: widget,
       autofocus: true,
-      onKey: (event) {
-        if (event is RawKeyDownEvent) {
-          if (event.isKeyPressed(LogicalKeyboardKey.arrowUp)) {
+      onKeyEvent: (event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
             readerControllerEvent.broadcast(ReaderControllerEventArgs("UP"));
-          }
-          if (event.isKeyPressed(LogicalKeyboardKey.arrowDown)) {
-            readerControllerEvent
-                .broadcast(ReaderControllerEventArgs("DOWN"));
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            readerControllerEvent.broadcast(ReaderControllerEventArgs("DOWN"));
           }
         }
       },
+      child: widget,
     );
   }
   return widget;

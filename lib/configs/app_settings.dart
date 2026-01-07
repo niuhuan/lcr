@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:lcr/src/rust/api/backend.dart';
 import 'package:lcr/src/rust/database/app_settings.dart';
 import 'package:signals/signals.dart';

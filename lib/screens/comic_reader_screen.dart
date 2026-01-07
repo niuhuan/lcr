@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,7 +7,6 @@ import 'package:lcr/screens/components/comic_image_provider.dart';
 import 'package:lcr/screens/components/keyboard_controller.dart';
 import 'package:lcr/screens/select_chapter_screen.dart';
 import 'package:lcr/src/rust/api/backend.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:signals/signals_flutter.dart';
 
@@ -68,6 +66,13 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
       imgIndex.value = widget.comic.lastReadPageIndex;
     }
     final images = await imageList(chapterId: c.id);
+    if (images.isEmpty) {
+      imgIndex.value = 0;
+    } else {
+      imgIndex.value = imgIndex.value
+          .clamp(0, images.length - 1)
+          .toInt();
+    }
     this.images.value = images;
     updateComicRead(
       comicId: widget.comic.id,
@@ -107,6 +112,120 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     );
   }
 
+  Widget _buildReader({
+    required BuildContext context,
+    required Key key,
+    required ReaderSettings settings,
+    required List<ComicImage> images,
+    required ComicChapter chapter,
+    required List<ComicChapter> chapters,
+    required bool fullScreen,
+  }) {
+    return settings.readerType == "WebToon"
+        ? WebtoonReader(
+          key: key,
+          settings: settings,
+          images: images,
+          fullScreen: fullScreen,
+          comic: widget.comic,
+          switchFullScreen: _switchFullScreen,
+          onIndex: (index) => _onIndex(chapter: chapter, index: index),
+          initIndex: imgIndex.value,
+          onSettings: () => _onSettings(context),
+          nextChapter: () => _nextChapter(chapter: chapter, chapters: chapters),
+          onSelectChapter:
+              () => _onSelectChapter(context, chapter: chapter, chapters: chapters),
+        )
+        : GalleryReader(
+          key: key,
+          settings: settings,
+          images: images,
+          fullScreen: fullScreen,
+          comic: widget.comic,
+          switchFullScreen: _switchFullScreen,
+          onIndex: (index) => _onIndex(chapter: chapter, index: index),
+          initIndex: imgIndex.value,
+          onSettings: () => _onSettings(context),
+          nextChapter: () => _nextChapter(chapter: chapter, chapters: chapters),
+          onSelectChapter:
+              () => _onSelectChapter(context, chapter: chapter, chapters: chapters),
+        );
+  }
+
+  void _switchFullScreen() {
+    fullScreen.value = !fullScreen.value;
+    if (!appSettings.fullScreenRemoveBars) {
+      return;
+    }
+    if (fullScreen.value) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.edgeToEdge,
+        overlays: SystemUiOverlay.values,
+      );
+    }
+  }
+
+  Future<void> _onIndex({required ComicChapter chapter, required int index}) async {
+    if (imgIndex.value == index) {
+      return;
+    }
+    imgIndex.value = index;
+    updateComicRead(
+      comicId: widget.comic.id,
+      chapterId: chapter.id,
+      chapterTitle: chapter.title,
+      pageIndex: index,
+    );
+  }
+
+  Future<void> _onSettings(BuildContext context) async {
+    await Navigator.push(
+      context,
+      mixRoute(
+        builder: (context) => ReaderConfigScreen(
+          comic: widget.comic,
+          globalSettings: globalReaderSettings.value!,
+          comicSettings: comicReaderSettings.value,
+        ),
+      ),
+    );
+    final crs = await readerSettings(comicId: widget.comic.id);
+    final grs = await readerSettings(comicId: "");
+    comicReaderSettings.value = crs;
+    globalReaderSettings.value = grs;
+  }
+
+  Future<void> _nextChapter({
+    required ComicChapter chapter,
+    required List<ComicChapter> chapters,
+  }) async {
+    final currentIndex = chapters.indexWhere((c) => c.id == chapter.id);
+    if (currentIndex < 0 || currentIndex >= chapters.length - 1) {
+      return;
+    }
+    await _goToChapter(chapters[currentIndex + 1]);
+  }
+
+  Future<void> _onSelectChapter(
+    BuildContext context, {
+    required ComicChapter chapter,
+    required List<ComicChapter> chapters,
+  }) async {
+    final selectedChapter = await Navigator.push<ComicChapter>(
+      context,
+      mixRoute(
+        builder:
+            (context) =>
+                SelectChapterScreen(chapters: chapters, currentChapter: chapter),
+      ),
+    );
+    if (selectedChapter != null) {
+      await _goToChapter(selectedChapter);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Watch((context) {
@@ -133,84 +252,21 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
       );
       return Scaffold(
         backgroundColor: Color(settings.backgroundColor),
-        body: Reader(
+        body: _buildReader(
+          context: context,
           key: key,
           settings: settings,
           images: images,
+          chapter: chapter,
+          chapters: chapters.value!,
           fullScreen: fullScreen,
-          comic: widget.comic,
-          switchFullScreen: () {
-            this.fullScreen.value = !this.fullScreen.value;
-            if (appSettings.fullScreenRemoveBars) {
-              if (this.fullScreen.value) {
-                SystemChrome.setEnabledSystemUIMode(
-                  SystemUiMode.manual,
-                  overlays: [],
-                );
-              } else {
-                SystemChrome.setEnabledSystemUIMode(
-                  SystemUiMode.edgeToEdge,
-                  overlays: SystemUiOverlay.values,
-                );
-              }
-            }
-          },
-          onIndex: (index) async {
-            if (imgIndex.value != index) {
-              imgIndex.value = index;
-              updateComicRead(
-                comicId: widget.comic.id,
-                chapterId: chapter.id,
-                chapterTitle: chapter.title,
-                pageIndex: index,
-              );
-            }
-          },
-          initIndex: imgIndex.value,
-          onSettings: () async {
-            await Navigator.push(
-              context,
-              mixRoute(
-                builder: (context) => ReaderConfigScreen(
-                  comic: widget.comic,
-                  globalSettings: globalReaderSettings.value!,
-                  comicSettings: comicReaderSettings.value,
-                ),
-              ),
-            );
-            final crs = await readerSettings(comicId: widget.comic.id);
-            final grs = await readerSettings(comicId: "");
-            comicReaderSettings.value = crs;
-            globalReaderSettings.value = grs;
-          },
-          nextChapter: () async {
-            final chapters = this.chapters.value!;
-            var currentIndex = chapters.indexWhere((c) => c.id == chapter.id);
-            currentIndex += 1;
-            final nextChapter = chapters[currentIndex];
-            _goToChapter(nextChapter);
-          },
-          onSelectChapter: () async {
-            final selectedChapter = await Navigator.push<ComicChapter>(
-              context,
-              mixRoute(
-                builder: (context) => SelectChapterScreen(
-                  chapters: chapters.value!,
-                  currentChapter: chapter,
-                ),
-              ),
-            );
-            if (selectedChapter != null) {
-              _goToChapter(selectedChapter);
-            }
-          },
         ),
       );
     });
   }
 }
 
-class Reader extends StatefulWidget {
+abstract class BaseReader extends StatefulWidget {
   final ReaderSettings settings;
   final List<ComicImage> images;
   final bool fullScreen;
@@ -222,7 +278,7 @@ class Reader extends StatefulWidget {
   final VoidCallback nextChapter;
   final VoidCallback onSelectChapter;
 
-  const Reader({
+  const BaseReader({
     super.key,
     required this.settings,
     required this.images,
@@ -235,23 +291,50 @@ class Reader extends StatefulWidget {
     required this.nextChapter,
     required this.onSelectChapter,
   });
-
-  @override
-  State<Reader> createState() {
-    switch (settings.readerType) {
-      case "WebToon":
-        return _WebtoonReaderState();
-      case "Gallery":
-        return _GalleryReaderState();
-      default:
-        return _GalleryReaderState();
-    }
-  }
 }
 
-abstract class _ReaderState extends State<Reader> {
+class WebtoonReader extends BaseReader {
+  const WebtoonReader({
+    super.key,
+    required super.settings,
+    required super.images,
+    required super.fullScreen,
+    required super.comic,
+    required super.switchFullScreen,
+    required super.onIndex,
+    required super.initIndex,
+    required super.onSettings,
+    required super.nextChapter,
+    required super.onSelectChapter,
+  });
+
+  @override
+  State<WebtoonReader> createState() => _WebtoonReaderState();
+}
+
+class GalleryReader extends BaseReader {
+  const GalleryReader({
+    super.key,
+    required super.settings,
+    required super.images,
+    required super.fullScreen,
+    required super.comic,
+    required super.switchFullScreen,
+    required super.onIndex,
+    required super.initIndex,
+    required super.onSettings,
+    required super.nextChapter,
+    required super.onSelectChapter,
+  });
+
+  @override
+  State<GalleryReader> createState() => _GalleryReaderState();
+}
+
+abstract class _ReaderState<T extends BaseReader> extends State<T> {
   late Signal<int> sliderValue = signal(widget.initIndex);
   Signal<int?> sliding = signal(null);
+  late int _lastReportedIndex = widget.initIndex;
 
   late final horizontal =
       widget.settings.readerDirection == "LeftToRight" ||
@@ -287,6 +370,20 @@ abstract class _ReaderState extends State<Reader> {
   Widget build(BuildContext context) {
     return Watch((context) {
       final filter = imageFilterFromString(widget.settings.imageFilter);
+      if (widget.images.isEmpty) {
+        return Stack(
+          children: [
+            Container(color: Color(widget.settings.backgroundColor)),
+            if (!widget.fullScreen) _appbar(),
+            Center(
+              child: Text(
+                "No images available.",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      }
       return Stack(
         children: [
           filter.process(buildContent()),
@@ -384,7 +481,7 @@ abstract class _ReaderState extends State<Reader> {
                 sliding.value = null;
                 sliderValue.value = value.toInt();
                 jumpTo(value.toInt());
-                this.onIndex(value.toInt());
+                onIndex(value.toInt());
               },
             ),
           ),
@@ -393,16 +490,18 @@ abstract class _ReaderState extends State<Reader> {
     );
   }
 
-  double appBarHeightAndStateBarHeight() {
-    final mediaQuery = MediaQuery.of(context);
-    return kToolbarHeight + mediaQuery.padding.top;
-  }
-
   void onIndex(int index) {
     if (index >= widget.images.length) {
       index = widget.images.length - 1;
     }
+    if (index < 0) {
+      index = 0;
+    }
     sliderValue.value = index;
+    if (_lastReportedIndex == index) {
+      return;
+    }
+    _lastReportedIndex = index;
     widget.onIndex(index);
     for (var i = index - 2; i <= index + 2; i++) {
       if (i < 0 || i >= widget.images.length) {
@@ -440,29 +539,26 @@ abstract class _ReaderState extends State<Reader> {
   FutureOr<dynamic> jumpTo(int index);
 }
 
-class _WebtoonReaderState extends _ReaderState {
+class _WebtoonReaderState extends _ReaderState<WebtoonReader> {
   var _imageLens = <double>[];
-  var _maxWidth = 0.0;
-  var _maxHeight = 0.0;
+  var _leadingPadding = 0.0;
+  var _viewportLen = 0.0;
 
   var _scrollControllerInitialized = false;
   late ScrollController _scrollController;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    if (_scrollControllerInitialized) {
+      _scrollController.removeListener(_onScroll);
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
   _onScroll() {
-    var currentIndex = this.currentIndex();
-    super.onIndex(currentIndex);
+    final index = currentIndex();
+    super.onIndex(index);
   }
 
   @override
@@ -471,15 +567,18 @@ class _WebtoonReaderState extends _ReaderState {
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
         final maxHeight = constraints.maxHeight;
+        final mediaQuery = MediaQuery.of(context);
+        final overlayTop =
+            widget.fullScreen ? 0.0 : (kToolbarHeight + mediaQuery.padding.top);
+        final overlayBottom =
+            widget.fullScreen ? 0.0 : (56.0 + mediaQuery.padding.bottom);
         final marginLeft = widget.settings.marginLeft.toDouble();
         final marginRight = widget.settings.marginRight.toDouble();
-        final marginTop = horizontal
-            ? (widget.settings.marginTop).toDouble()
-            : (widget.settings.marginTop + appBarHeightAndStateBarHeight());
-        final marginBottom = horizontal
-            ? (widget.settings.marginBottom).toDouble()
-            : (widget.settings.marginBottom + appBarHeightAndStateBarHeight());
-        List<Widget> images = [];
+        final marginTop = widget.settings.marginTop.toDouble() + overlayTop;
+        final marginBottom =
+            widget.settings.marginBottom.toDouble() + overlayBottom;
+
+        final reverse = widget.settings.readerDirection == "RightToLeft";
         List<double> imageLens = [];
         for (var imageData in widget.images) {
           if (horizontal) {
@@ -488,25 +587,8 @@ class _WebtoonReaderState extends _ReaderState {
               var rawImageWidth = imageData.width;
               var rawImageHeight = imageData.height;
               var imageWidth = imageHeight * rawImageWidth / rawImageHeight;
-              images.add(
-                Image(
-                  image: comicImageProvider(
-                    comicId: imageData.comicId,
-                    path: imageData.path,
-                  ),
-                  width: imageWidth,
-                  height: imageHeight,
-                ),
-              );
-              imageLens.add(imageHeight);
+              imageLens.add(imageWidth);
             } else {
-              images.add(
-                SizedBox(
-                  width: imageHeight,
-                  height: imageHeight,
-                  child: Icon(Icons.error_outline_outlined),
-                ),
-              );
               imageLens.add(imageHeight);
             }
           } else {
@@ -515,51 +597,44 @@ class _WebtoonReaderState extends _ReaderState {
               var rawImageWidth = imageData.width;
               var rawImageHeight = imageData.height;
               var imageHeight = imageWidth * rawImageHeight / rawImageWidth;
-              images.add(
-                Image(
-                  image: comicImageProvider(
-                    comicId: imageData.comicId,
-                    path: imageData.path,
-                  ),
-                  width: imageWidth,
-                  height: imageHeight,
-                ),
-              );
               imageLens.add(imageHeight);
             } else {
-              images.add(
-                SizedBox(
-                  width: imageWidth,
-                  height: imageWidth,
-                  child: Icon(Icons.error_outline_outlined),
-                ),
-              );
               imageLens.add(imageWidth);
             }
           }
         }
-        images.add(SafeArea(top: false, child: Container()));
         _imageLens = imageLens;
-        _maxWidth = maxWidth;
-        _maxHeight = maxHeight;
+        _leadingPadding =
+            horizontal ? (reverse ? marginRight : marginLeft) : marginTop;
+        _viewportLen =
+            (horizontal
+                    ? maxWidth - marginLeft - marginRight
+                    : maxHeight - marginTop - marginBottom)
+                .clamp(0.0, double.infinity)
+                .toDouble();
         if (_scrollControllerInitialized == false) {
           _scrollControllerInitialized = true;
           double initialScrollOffset = 0;
           if (super.sliderValue.value > 0) {
-            final v = super.sliderValue.value;
+            final v =
+                super.sliderValue.value.clamp(0, imageLens.length).toInt();
             for (var i = 0; i < imageLens.length && i < v; i++) {
-              initialScrollOffset += imageLens[v];
+              initialScrollOffset += imageLens[i];
             }
-            final maxScroll = imageLens.reduce((a, b) => a + b) - maxHeight;
-            initialScrollOffset = min(initialScrollOffset, maxScroll - 1);
+            initialScrollOffset += _leadingPadding;
+            final total =
+                imageLens.isEmpty ? 0.0 : imageLens.reduce((a, b) => a + b);
+            final maxScroll = max(total + _leadingPadding - _viewportLen, 0.0);
+            initialScrollOffset = initialScrollOffset
+                .clamp(0.0, max(0.0, maxScroll - 1))
+                .toDouble();
           }
-          print("initialScrollOffset: ${initialScrollOffset}");
           _scrollController = ScrollController(
             initialScrollOffset: initialScrollOffset,
           );
           _scrollController.addListener(_onScroll);
         }
-        return ListView(
+        return ListView.builder(
           physics: AlwaysScrollableScrollPhysics(),
           controller: _scrollController,
           scrollDirection: horizontal ? Axis.horizontal : Axis.vertical,
@@ -570,7 +645,54 @@ class _WebtoonReaderState extends _ReaderState {
             top: marginTop,
             bottom: marginBottom,
           ),
-          children: images,
+          itemCount: widget.images.length + 1,
+          itemBuilder: (context, index) {
+            if (index == widget.images.length) {
+              return SafeArea(top: false, child: Container());
+            }
+            final imageData = widget.images[index];
+            if (horizontal) {
+              final imageHeight = maxHeight - marginTop - marginBottom;
+              if (imageData.status == "READY") {
+                final rawImageWidth = imageData.width;
+                final rawImageHeight = imageData.height;
+                final imageWidth =
+                    imageHeight * rawImageWidth / rawImageHeight;
+                return Image(
+                  image: comicImageProvider(
+                    comicId: imageData.comicId,
+                    path: imageData.path,
+                  ),
+                  width: imageWidth,
+                  height: imageHeight,
+                );
+              }
+              return SizedBox(
+                width: imageHeight,
+                height: imageHeight,
+                child: Icon(Icons.error_outline_outlined),
+              );
+            }
+            final imageWidth = maxWidth - marginLeft - marginRight;
+            if (imageData.status == "READY") {
+              final rawImageWidth = imageData.width;
+              final rawImageHeight = imageData.height;
+              final imageHeight = imageWidth * rawImageHeight / rawImageWidth;
+              return Image(
+                image: comicImageProvider(
+                  comicId: imageData.comicId,
+                  path: imageData.path,
+                ),
+                width: imageWidth,
+                height: imageHeight,
+              );
+            }
+            return SizedBox(
+              width: imageWidth,
+              height: imageWidth,
+              child: Icon(Icons.error_outline_outlined),
+            );
+          },
         );
       },
     );
@@ -585,7 +707,7 @@ class _WebtoonReaderState extends _ReaderState {
     if ("Screen" == widget.settings.scrollType) {
       var target =
           currentScroll -
-          (horizontal ? _maxWidth : _maxHeight) *
+          _viewportLen *
               widget.settings.scrollPercent /
               100;
       target = max(target, 0);
@@ -602,9 +724,10 @@ class _WebtoonReaderState extends _ReaderState {
     if ("Page" == widget.settings.scrollType) {
       var currentIndex = 0;
       var acc = 0.0;
+      final adjustedCurrent = max(0.0, currentScroll - _leadingPadding);
       for (var i = 0; i < _imageLens.length; i++) {
         acc += _imageLens[i];
-        if (acc >= currentScroll + 0.1) {
+        if (acc >= adjustedCurrent + 0.1) {
           currentIndex = i;
           break;
         }
@@ -619,6 +742,7 @@ class _WebtoonReaderState extends _ReaderState {
       for (var i = 0; i < targetIndex; i++) {
         target += _imageLens[i];
       }
+      target += _leadingPadding;
       if (widget.settings.annotation) {
         _scrollController.animateTo(
           target,
@@ -643,7 +767,7 @@ class _WebtoonReaderState extends _ReaderState {
     if ("Screen" == widget.settings.scrollType) {
       var target =
           currentScroll +
-          (horizontal ? _maxWidth : _maxHeight) *
+          _viewportLen *
               widget.settings.scrollPercent /
               100;
       target = min(target, maxScroll - 1);
@@ -660,9 +784,10 @@ class _WebtoonReaderState extends _ReaderState {
     if ("Page" == widget.settings.scrollType) {
       var currentIndex = 0;
       var acc = 0.0;
+      final adjustedCurrent = max(0.0, currentScroll - _leadingPadding);
       for (var i = 0; i < _imageLens.length; i++) {
         acc += _imageLens[i];
-        if (acc >= currentScroll + 0.1) {
+        if (acc >= adjustedCurrent + 0.1) {
           currentIndex = i;
           break;
         }
@@ -678,6 +803,7 @@ class _WebtoonReaderState extends _ReaderState {
       for (var i = 0; i < targetIndex; i++) {
         target += _imageLens[i];
       }
+      target += _leadingPadding;
       if (widget.settings.annotation) {
         _scrollController.animateTo(
           target,
@@ -691,7 +817,7 @@ class _WebtoonReaderState extends _ReaderState {
   }
 
   int currentIndex() {
-    var current = _scrollController.offset;
+    final current = max(0.0, _scrollController.offset - _leadingPadding);
     var acc = 0.0;
     for (var i = 0; i < _imageLens.length; i++) {
       acc += _imageLens[i];
@@ -705,7 +831,6 @@ class _WebtoonReaderState extends _ReaderState {
   @override
   Future jumpTo(int index) async {
     final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
     if (index < 0 || index >= widget.images.length) {
       return;
     }
@@ -713,6 +838,7 @@ class _WebtoonReaderState extends _ReaderState {
     for (var i = 0; i < index; i++) {
       target += _imageLens[i];
     }
+    target += _leadingPadding;
     target = min(target, maxScroll - 1);
     if (widget.settings.annotation) {
       _scrollController.animateTo(
@@ -726,42 +852,34 @@ class _WebtoonReaderState extends _ReaderState {
   }
 }
 
-class _GalleryReaderState extends _ReaderState {
+class _GalleryReaderState extends _ReaderState<GalleryReader> {
   late final _controller = PageController(initialPage: widget.initIndex);
-  final List<PhotoViewGalleryPageOptions> _options = [];
-
-  @override
-  void initState() {
-    for (var imageData in widget.images) {
-      if (imageData.status == "READY") {
-        _options.add(
-          PhotoViewGalleryPageOptions(
-            imageProvider: comicImageProvider(
-              comicId: imageData.comicId,
-              path: imageData.path,
-            ),
-            filterQuality: FilterQuality.high,
-          ),
-        );
-      } else {
-        _options.add(
-          PhotoViewGalleryPageOptions.customChild(child: Icon(Icons.error)),
-        );
-      }
-    }
-    super.initState();
-  }
 
   @override
   Widget buildContent() {
     var horizontal =
         widget.settings.readerDirection == "LeftToRight" ||
         widget.settings.readerDirection == "RightToLeft";
-    return PhotoViewGallery(
+    return PhotoViewGallery.builder(
       pageController: _controller,
       scrollDirection: horizontal ? Axis.horizontal : Axis.vertical,
       reverse: widget.settings.readerDirection == "RightToLeft",
-      pageOptions: _options,
+      itemCount: widget.images.length,
+      builder: (context, index) {
+        final imageData = widget.images[index];
+        if (imageData.status == "READY") {
+          return PhotoViewGalleryPageOptions(
+            imageProvider: comicImageProvider(
+              comicId: imageData.comicId,
+              path: imageData.path,
+            ),
+            filterQuality: FilterQuality.high,
+          );
+        }
+        return PhotoViewGalleryPageOptions.customChild(
+          child: Center(child: Icon(Icons.error)),
+        );
+      },
       onPageChanged: _onPageChanged,
       backgroundDecoration: BoxDecoration(
         color: Color(widget.settings.backgroundColor),

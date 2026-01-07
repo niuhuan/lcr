@@ -130,7 +130,6 @@ class ComicCard extends StatelessWidget {
   }
 
   Widget _flags(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       children: [
         if (onEdit != null)
