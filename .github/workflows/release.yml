@@ -175,6 +175,7 @@ jobs:
           flutter build apk --release \
             --build-name=${{ needs.get-version.outputs.version }} \
             --build-number=${{ needs.get-version.outputs.build-number }}
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
           echo $KEY_PASSWORD | $ANDROID_HOME/build-tools/34.0.0/apksigner sign --ks keystore.jks build/app/outputs/flutter-apk/app-release.apk
 
       - name: Build App Bundle
