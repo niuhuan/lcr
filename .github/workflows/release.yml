@@ -126,9 +126,10 @@ jobs:
           TAG="${{ needs.get-version.outputs.tag }}"
           ASSETS="${{ needs.check-release.outputs.existing-assets }}"
           
+          VERSION="${{ needs.get-version.outputs.version }}"
           if [ "${{ needs.check-release.outputs.release-exists }}" = "true" ] && \
-             echo "$ASSETS" | grep -q "app-release.apk" && \
-             echo "$ASSETS" | grep -q "app-release.aab"; then
+             echo "$ASSETS" | grep -q "lcr-${VERSION}-android.apk" && \
+             echo "$ASSETS" | grep -q "lcr-${VERSION}-android.aab"; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Android assets already exist, skipping build"
           else
@@ -153,7 +154,7 @@ jobs:
       - name: Accept Android licenses
         if: steps.check-assets.outputs.skip != 'true'
         run: |
-          flutter doctor --android-licenses || true
+          yes | flutter doctor --android-licenses || true
       
       - name: Install Rust
         if: steps.check-assets.outputs.skip != 'true'
@@ -286,24 +287,69 @@ jobs:
             --build-name=${{ needs.get-version.outputs.version }} \
             --build-number=${{ needs.get-version.outputs.build-number }}
       
-      - name: Upload Android artifacts
+      - name: Setup GitHub CLI
         if: steps.check-assets.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: android
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
-          retention-days: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status || gh auth login --with-token <<< "$GITHUB_TOKEN"
+      
+      - name: Ensure Release Exists
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          if ! gh release view "$TAG" &>/dev/null; then
+            VERSION="${{ needs.get-version.outputs.version }}"
+            gh release create "$TAG" \
+              --title "Release $VERSION" \
+              --notes "Release $VERSION" \
+              --draft || true
+          fi
+      
+      - name: Upload Android to Release
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
+          
+          # Rename and upload APK
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            APK_NAME="lcr-${VERSION}-android.apk"
+            cp "build/app/outputs/flutter-apk/app-release.apk" "$APK_NAME"
+            echo "Uploading $APK_NAME..."
+            gh release upload "$TAG" "$APK_NAME" --clobber
+            echo "✓ APK uploaded successfully"
+            rm -f "$APK_NAME"
+          fi
+          
+          # Rename and upload AAB
+          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            AAB_NAME="lcr-${VERSION}-android.aab"
+            cp "build/app/outputs/bundle/release/app-release.aab" "$AAB_NAME"
+            echo "Uploading $AAB_NAME..."
+            gh release upload "$TAG" "$AAB_NAME" --clobber
+            echo "✓ AAB uploaded successfully"
+            rm -f "$AAB_NAME"
+          fi
 
   build-linux:
     name: Build Linux
-    runs-on: ubuntu-latest
     needs: [get-version, check-release]
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            target_arch: x86_64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            target_arch: aarch64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       
@@ -316,7 +362,7 @@ jobs:
           ASSETS="${{ needs.check-release.outputs.existing-assets }}"
           VERSION="${{ needs.get-version.outputs.version }}"
           
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
+          if [ "${{ matrix.target_arch }}" = "aarch64" ]; then
             ASSET_NAME="lcr-${VERSION}-linux-aarch64.AppImage"
           else
             ASSET_NAME="lcr-${VERSION}-linux-x86_64.AppImage"
@@ -325,10 +371,10 @@ jobs:
           if [ "${{ needs.check-release.outputs.release-exists }}" = "true" ] && \
              echo "$ASSETS" | grep -q "$ASSET_NAME"; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "Linux ${{ matrix.arch }} asset already exists, skipping build"
+            echo "Linux ${{ matrix.target_arch }} asset already exists, skipping build"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "Linux ${{ matrix.arch }} asset missing, will build"
+            echo "Linux ${{ matrix.target_arch }} asset missing, will build"
           fi
       
       - name: Install Linux dependencies
@@ -355,27 +401,18 @@ jobs:
       - name: Build Linux
         if: steps.check-assets.outputs.skip != 'true'
         run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            flutter build linux --release \
-              --build-name=${{ needs.get-version.outputs.version }} \
-              --build-number=${{ needs.get-version.outputs.build-number }} \
-              --target-platform=linux-arm64
-          else
-            flutter build linux --release \
-              --build-name=${{ needs.get-version.outputs.version }} \
-              --build-number=${{ needs.get-version.outputs.build-number }} \
-              --target-platform=linux-x64
-          fi
+          flutter build linux --release \
+            --build-name=${{ needs.get-version.outputs.version }} \
+            --build-number=${{ needs.get-version.outputs.build-number }}
       
       - name: Create AppImage
         if: steps.check-assets.outputs.skip != 'true'
         run: |
           # Determine architecture for appimagetool
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            ARCH="aarch64"
+          ARCH="${{ matrix.target_arch }}"
+          if [ "$ARCH" = "aarch64" ]; then
             APPIMAGE_TOOL="appimagetool-aarch64.AppImage"
           else
-            ARCH="x86_64"
             APPIMAGE_TOOL="appimagetool-x86_64.AppImage"
           fi
           
@@ -384,7 +421,7 @@ jobs:
           chmod +x $APPIMAGE_TOOL
           
           # Prepare bundle directory
-          BUNDLE_DIR="build/linux/${{ matrix.arch }}/release/bundle"
+          BUNDLE_DIR="build/linux/${{ matrix.target_arch }}/release/bundle"
           
           # Rename executable to AppRun
           if [ -f "$BUNDLE_DIR/lcr" ]; then
@@ -422,13 +459,43 @@ jobs:
             exit 1
           fi
       
-      - name: Upload Linux artifacts
+      - name: Setup GitHub CLI
         if: steps.check-assets.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-${{ matrix.arch }}
-          path: lcr-${{ needs.get-version.outputs.version }}-linux-${{ matrix.arch == 'arm64' && 'aarch64' || 'x86_64' }}.AppImage
-          retention-days: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status || gh auth login --with-token <<< "$GITHUB_TOKEN"
+      
+      - name: Ensure Release Exists
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          if ! gh release view "$TAG" &>/dev/null; then
+            VERSION="${{ needs.get-version.outputs.version }}"
+            gh release create "$TAG" \
+              --title "Release $VERSION" \
+              --notes "Release $VERSION" \
+              --draft || true
+          fi
+      
+      - name: Upload Linux to Release
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          APPIMAGE_FILE="lcr-${{ needs.get-version.outputs.version }}-linux-${{ matrix.target_arch }}.AppImage"
+          
+          if [ -f "$APPIMAGE_FILE" ]; then
+            echo "Uploading $APPIMAGE_FILE..."
+            gh release upload "$TAG" "$APPIMAGE_FILE" --clobber
+            echo "✓ Linux AppImage uploaded successfully"
+          else
+            echo "Error: $APPIMAGE_FILE not found"
+            exit 1
+          fi
 
   build-windows:
     name: Build Windows
@@ -444,7 +511,8 @@ jobs:
         run: |
           $TAG = "${{ needs.get-version.outputs.tag }}"
           $ASSETS = "${{ needs.check-release.outputs.existing-assets }}"
-          $ASSET_NAME = "lcr-windows-x64.zip"
+          $VERSION = "${{ needs.get-version.outputs.version }}"
+          $ASSET_NAME = "lcr-${VERSION}-windows-x64.zip"
           
           if (("${{ needs.check-release.outputs.release-exists }}" -eq "true") -and ($ASSETS -match $ASSET_NAME)) {
             Write-Host "Windows asset already exists, skipping build"
@@ -479,24 +547,57 @@ jobs:
       - name: Create archive
         if: steps.check-assets.outputs.skip != 'true'
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath lcr-windows-x64.zip -Force
+          $VERSION = "${{ needs.get-version.outputs.version }}"
+          $ZIP_NAME = "lcr-${VERSION}-windows-x64.zip"
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath $ZIP_NAME -Force
       
-      - name: Upload Windows artifacts
+      - name: Setup GitHub CLI
         if: steps.check-assets.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: lcr-windows-x64.zip
-          retention-days: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $env:GH_TOKEN = $env:GITHUB_TOKEN
+          gh auth status
+          if ($LASTEXITCODE -ne 0) {
+            echo $env:GITHUB_TOKEN | gh auth login --with-token
+          }
+      
+      - name: Ensure Release Exists
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $TAG = "${{ needs.get-version.outputs.tag }}"
+          if (-not (gh release view $TAG 2>$null)) {
+            $VERSION = "${{ needs.get-version.outputs.version }}"
+            gh release create $TAG `
+              --title "Release $VERSION" `
+              --notes "Release $VERSION" `
+              --draft
+          }
+      
+      - name: Upload Windows to Release
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $TAG = "${{ needs.get-version.outputs.tag }}"
+          $VERSION = "${{ needs.get-version.outputs.version }}"
+          $ZIP_FILE = "lcr-${VERSION}-windows-x64.zip"
+          
+          if (Test-Path $ZIP_FILE) {
+            Write-Host "Uploading $ZIP_FILE..."
+            gh release upload $TAG $ZIP_FILE --clobber
+            Write-Host "✓ Windows ZIP uploaded successfully"
+          } else {
+            Write-Host "Error: $ZIP_FILE not found"
+            exit 1
+          }
 
   build-macos:
     name: Build macOS
-    runs-on: macos-latest
     needs: [get-version, check-release]
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64, arm64]
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       
@@ -507,15 +608,15 @@ jobs:
         run: |
           TAG="${{ needs.get-version.outputs.tag }}"
           ASSETS="${{ needs.check-release.outputs.existing-assets }}"
-          ASSET_NAME="lcr-macos-${{ matrix.arch }}.dmg"
+          ASSET_NAME="lcr-${{ needs.get-version.outputs.version }}-macos.dmg"
           
           if [ "${{ needs.check-release.outputs.release-exists }}" = "true" ] && \
              echo "$ASSETS" | grep -q "$ASSET_NAME"; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "macOS ${{ matrix.arch }} asset already exists, skipping build"
+            echo "macOS asset already exists, skipping build"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "macOS ${{ matrix.arch }} asset missing, will build"
+            echo "macOS asset missing, will build"
           fi
       
       - name: Setup Flutter
@@ -535,39 +636,60 @@ jobs:
       
       - name: Build macOS
         if: steps.check-assets.outputs.skip != 'true'
-        env:
-          ARCH: ${{ matrix.arch }}
         run: |
-          if [ "$ARCH" = "arm64" ]; then
-            flutter build macos --release \
-              --build-name=${{ needs.get-version.outputs.version }} \
-              --build-number=${{ needs.get-version.outputs.build-number }} \
-              --target-platform=darwin-arm64
-          else
-            flutter build macos --release \
-              --build-name=${{ needs.get-version.outputs.version }} \
-              --build-number=${{ needs.get-version.outputs.build-number }} \
-              --target-platform=darwin-x64
-          fi
+          flutter build macos --release \
+            --build-name=${{ needs.get-version.outputs.version }} \
+            --build-number=${{ needs.get-version.outputs.build-number }}
       
       - name: Create DMG
         if: steps.check-assets.outputs.skip != 'true'
         run: |
-          cd build
-          mkdir -p dmg
-          mv macos/Build/Products/Release/lcr.app dmg/
-          ln -sf /Applications dmg/
-          hdiutil create -volname lcr -srcfolder dmg -ov -format UDBZ lcr-macos-${{ matrix.arch }}.dmg
-          mv lcr-macos-${{ matrix.arch }}.dmg ../
-          cd ..
+          VERSION="${{ needs.get-version.outputs.version }}"
+          DMG_NAME="lcr-${VERSION}-macos.dmg"
+          
+          mkdir -p macos_bundle
+          ln -sf /Applications macos_bundle/
+          mv build/macos/Build/Products/Release/lcr.app macos_bundle/
+          hdiutil create -volname lcr -srcfolder macos_bundle -ov -format UDBZ "$DMG_NAME"
+          rm -rf macos_bundle
       
-      - name: Upload macOS artifacts
+      - name: Setup GitHub CLI
         if: steps.check-assets.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-${{ matrix.arch }}
-          path: lcr-macos-${{ matrix.arch }}.dmg
-          retention-days: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status || gh auth login --with-token <<< "$GITHUB_TOKEN"
+      
+      - name: Ensure Release Exists
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          if ! gh release view "$TAG" &>/dev/null; then
+            VERSION="${{ needs.get-version.outputs.version }}"
+            gh release create "$TAG" \
+              --title "Release $VERSION" \
+              --notes "Release $VERSION" \
+              --draft || true
+          fi
+      
+      - name: Upload macOS to Release
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          DMG_FILE="lcr-${{ needs.get-version.outputs.version }}-macos.dmg"
+          
+          if [ -f "$DMG_FILE" ]; then
+            echo "Uploading $DMG_FILE..."
+            gh release upload "$TAG" "$DMG_FILE" --clobber
+            echo "✓ macOS DMG uploaded successfully"
+          else
+            echo "Error: $DMG_FILE not found"
+            exit 1
+          fi
 
   build-ios:
     name: Build iOS
@@ -583,9 +705,11 @@ jobs:
         run: |
           TAG="${{ needs.get-version.outputs.tag }}"
           ASSETS="${{ needs.check-release.outputs.existing-assets }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
+          ASSET_NAME="lcr-${VERSION}-ios.ipa"
           
           if [ "${{ needs.check-release.outputs.release-exists }}" = "true" ] && \
-             echo "$ASSETS" | grep -q "\.ipa"; then
+             echo "$ASSETS" | grep -q "$ASSET_NAME"; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "iOS asset already exists, skipping build"
           else
@@ -619,6 +743,9 @@ jobs:
       - name: Package IPA from xcarchive
         if: steps.check-assets.outputs.skip != 'true'
         run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          IPA_NAME="lcr-${VERSION}-ios.ipa"
+          
           # Create Payload directory
           mkdir -p Payload
           
@@ -626,25 +753,56 @@ jobs:
           APP_NAME=$(ls build/ios/archive/Runner.xcarchive/Products/Applications/ | grep .app)
           cp -r "build/ios/archive/Runner.xcarchive/Products/Applications/$APP_NAME" Payload/
           
-          # Create IPA file using zip
-          zip -r lcr.ipa Payload
+          # Create IPA file using zip with versioned name
+          zip -r "$IPA_NAME" Payload
           
           # Clean up
           rm -rf Payload
           
-          echo "IPA file created: lcr.ipa"
-          ls -lh lcr.ipa
+          echo "IPA file created: $IPA_NAME"
+          ls -lh "$IPA_NAME"
       
-      - name: Upload iOS artifacts
+      - name: Setup GitHub CLI
         if: steps.check-assets.outputs.skip != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios
-          path: lcr.ipa
-          retention-days: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status || gh auth login --with-token <<< "$GITHUB_TOKEN"
+      
+      - name: Ensure Release Exists
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          if ! gh release view "$TAG" &>/dev/null; then
+            VERSION="${{ needs.get-version.outputs.version }}"
+            gh release create "$TAG" \
+              --title "Release $VERSION" \
+              --notes "Release $VERSION" \
+              --draft || true
+          fi
+      
+      - name: Upload iOS to Release
+        if: steps.check-assets.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
+          IPA_NAME="lcr-${VERSION}-ios.ipa"
+          
+          if [ -f "$IPA_NAME" ]; then
+            echo "Uploading $IPA_NAME..."
+            gh release upload "$TAG" "$IPA_NAME" --clobber
+            echo "✓ iOS IPA uploaded successfully"
+          else
+            echo "Error: $IPA_NAME not found"
+            exit 1
+          fi
 
-  upload-release:
-    name: Upload to Release
+  verify-and-publish-release:
+    name: Verify and Publish Release
     runs-on: ubuntu-latest
     needs: [get-version, check-release, create-release, build-android, build-linux, build-windows, build-macos, build-ios]
     if: always()
@@ -653,34 +811,114 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          pattern: '*'
-          merge-multiple: false
+      - name: Setup GitHub CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status || gh auth login --with-token <<< "$GITHUB_TOKEN"
       
-      - name: Upload to Release
+      - name: Verify Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.get-version.outputs.tag }}"
+          VERSION="${{ needs.get-version.outputs.version }}"
+          
+          echo "=== Verifying Release Assets ==="
+          
+          # Check if release exists
+          if ! gh release view "$TAG" &>/dev/null; then
+            echo "Error: Release $TAG does not exist"
+            exit 1
+          fi
+          
+          # Get all assets from release
+          ASSETS=$(gh release view "$TAG" --json assets --jq -r '.assets[].name' 2>/dev/null || echo "")
+          
+          if [ -z "$ASSETS" ]; then
+            echo "Warning: No assets found in release $TAG"
+            echo "Release may be empty or assets failed to upload"
+          else
+            echo "Found assets in release:"
+            echo "$ASSETS" | sed 's/^/  - /'
+            echo ""
+            
+            # Expected assets
+            EXPECTED_ASSETS=(
+              "lcr-${VERSION}-android.apk"
+              "lcr-${VERSION}-android.aab"
+              "lcr-${VERSION}-linux-x86_64.AppImage"
+              "lcr-${VERSION}-linux-aarch64.AppImage"
+              "lcr-${VERSION}-windows-x64.zip"
+              "lcr-${VERSION}-macos.dmg"
+              "lcr-${VERSION}-ios.ipa"
+            )
+            
+            echo "=== Checking Expected Assets ==="
+            MISSING_ASSETS=()
+            for expected in "${EXPECTED_ASSETS[@]}"; do
+              if echo "$ASSETS" | grep -qF "$expected"; then
+                echo "✓ Found: $expected"
+              else
+                echo "✗ Missing: $expected"
+                MISSING_ASSETS+=("$expected")
+              fi
+            done
+            
+            if [ ${#MISSING_ASSETS[@]} -gt 0 ]; then
+              echo ""
+              echo "Warning: Some expected assets are missing:"
+              printf '  - %s\n' "${MISSING_ASSETS[@]}"
+              echo "This may be expected if some builds were skipped or failed"
+            else
+              echo ""
+              echo "✓ All expected assets are present"
+            fi
+          fi
+          
+          echo ""
+          echo "=== Release Status ==="
+          RELEASE_INFO=$(gh release view "$TAG" --json isDraft,isPrerelease,publishedAt 2>/dev/null || echo "{}")
+          IS_DRAFT=$(echo "$RELEASE_INFO" | jq -r '.isDraft // false')
+          IS_PRERELEASE=$(echo "$RELEASE_INFO" | jq -r '.isPrerelease // false')
+          PUBLISHED_AT=$(echo "$RELEASE_INFO" | jq -r '.publishedAt // "null"')
+          
+          echo "Release: $TAG"
+          echo "Draft: $IS_DRAFT"
+          echo "Prerelease: $IS_PRERELEASE"
+          echo "Published: $PUBLISHED_AT"
+      
+      - name: Publish Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ needs.get-version.outputs.tag }}"
           
-          # Ensure release exists
-          if ! gh release view "$TAG" &>/dev/null; then
-            VERSION="${{ needs.get-version.outputs.version }}"
-            gh release create "$TAG" \
-              --title "Release $VERSION" \
-              --notes "Release $VERSION" \
-              --draft || true
+          echo "=== Publishing Release ==="
+          
+          # Check if release is a draft
+          IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null || echo "false")
+          
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "Release is a draft, publishing now..."
+            if gh release edit "$TAG" --draft=false 2>&1; then
+              echo "✓ Release $TAG published successfully"
+            else
+              echo "✗ Failed to publish release $TAG"
+              exit 1
+            fi
+          else
+            echo "Release $TAG is already published"
           fi
           
-          # Find and upload all artifact files
-          find artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.zip" -o -name "*.tar.gz" -o -name "*.ipa" -o -name "*.dmg" -o -name "*.AppImage" \) | while read file; do
-            filename=$(basename "$file")
-            echo "Uploading $filename..."
-            gh release upload "$TAG" "$file" --clobber || echo "Warning: Failed to upload $filename"
-          done
-          
-          # Publish the release if it was a draft
-          gh release edit "$TAG" --draft=false || true
+          echo ""
+          echo "=== Final Release Information ==="
+          gh release view "$TAG" --json name,tagName,isDraft,isPrerelease,publishedAt,assets --jq '{
+            name: .name,
+            tag: .tagName,
+            draft: .isDraft,
+            prerelease: .isPrerelease,
+            published: .publishedAt,
+            asset_count: (.assets | length),
+            assets: [.assets[] | .name]
+          }' || true
