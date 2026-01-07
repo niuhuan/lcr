@@ -160,7 +160,11 @@ jobs:
         if: steps.check-assets.outputs.skip != 'true'
         uses: dtolnay/rust-toolchain@stable
       
-      - name: Setup Android signing
+      - name: Install dependencies
+        if: steps.check-assets.outputs.skip != 'true'
+        run: flutter pub get
+      
+      - name: Build APK
         if: steps.check-assets.outputs.skip != 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -168,120 +172,18 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          # Create keystore directory
-          mkdir -p android/app
-          
-          # Check if keystore secret is provided
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "Error: ANDROID_KEYSTORE_BASE64 secret is not set"
-            exit 1
-          fi
-          
-          # Decode base64 keystore from secret and write to file
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
-          
-          # Verify keystore file was created and is valid
-          if [ ! -f android/app/keystore.jks ]; then
-            echo "Error: Keystore file was not created"
-            exit 1
-          fi
-          
-          # Check file size (should be > 0)
-          if [ ! -s android/app/keystore.jks ]; then
-            echo "Error: Keystore file is empty"
-            exit 1
-          fi
-          
-          echo "Keystore file created successfully"
-          ls -lh android/app/keystore.jks
-          
-          # Create key.properties file with correct path
-          cat > android/key.properties <<EOF
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=app/keystore.jks
-          EOF
-          
-          echo "Key properties file created"
-      
-      - name: Configure Android signing
-        if: steps.check-assets.outputs.skip != 'true'
-        run: |
-          # Read the current build.gradle.kts
-          cat android/app/build.gradle.kts > android/app/build.gradle.kts.bak
-          
-          # Create a new build.gradle.kts with signing config
-          cat > android/app/build.gradle.kts <<'EOF'
-          plugins {
-              id("com.android.application")
-              id("kotlin-android")
-              id("dev.flutter.flutter-gradle-plugin")
-          }
-
-          // Load keystore properties
-          val keystorePropertiesFile = rootProject.file("key.properties")
-          val keystoreProperties = java.util.Properties()
-          if (keystorePropertiesFile.exists()) {
-              keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
-          }
-
-          android {
-              namespace = "opensource.lcr"
-              compileSdk = flutter.compileSdkVersion
-              ndkVersion = flutter.ndkVersion
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_11
-                  targetCompatibility = JavaVersion.VERSION_11
-              }
-
-              kotlinOptions {
-                  jvmTarget = JavaVersion.VERSION_11.toString()
-              }
-
-              defaultConfig {
-                  applicationId = "opensource.lcr"
-                  minSdk = flutter.minSdkVersion
-                  targetSdk = flutter.targetSdkVersion
-                  versionCode = flutter.versionCode
-                  versionName = flutter.versionName
-              }
-
-              signingConfigs {
-                  create("release") {
-                      keyAlias = keystoreProperties["keyAlias"] as String
-                      keyPassword = keystoreProperties["keyPassword"] as String
-                      storeFile = file(keystoreProperties["storeFile"] as String)
-                      storePassword = keystoreProperties["storePassword"] as String
-                  }
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig = signingConfigs.getByName("release")
-                  }
-              }
-          }
-
-          flutter {
-              source = "../.."
-          }
-          EOF
-      
-      - name: Install dependencies
-        if: steps.check-assets.outputs.skip != 'true'
-        run: flutter pub get
-      
-      - name: Build APK
-        if: steps.check-assets.outputs.skip != 'true'
-        run: |
           flutter build apk --release \
             --build-name=${{ needs.get-version.outputs.version }} \
             --build-number=${{ needs.get-version.outputs.build-number }}
-      
+          echo $KEY_PASSWORD | $ANDROID_HOME/build-tools/34.0.0/apksigner sign --ks keystore.jks build/app/outputs/flutter-apk/app-release.apk
+
       - name: Build App Bundle
         if: steps.check-assets.outputs.skip != 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           flutter build appbundle --release \
             --build-name=${{ needs.get-version.outputs.version }} \
