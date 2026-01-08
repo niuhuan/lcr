@@ -12,8 +12,8 @@ pub fn desktop_root() -> Result<String> {
     #[cfg(target_os = "windows")]
     {
         use anyhow::Context;
-        let exe_dir = std::env::current_exe()?
-            .parent()
+        let exe_path = std::env::current_exe()?;
+        let exe_dir = exe_path.parent()
             .with_context(|| "error")?;
         let path = exe_dir.join("data");
         Ok(path.to_str().with_context(|| "error")?.to_string())

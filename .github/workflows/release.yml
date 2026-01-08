@@ -215,7 +215,7 @@ jobs:
           chmod +x $APPIMAGE_TOOL
           
           # Prepare bundle directory
-          BUNDLE_DIR="build/linux/x86_64/release/bundle"
+          BUNDLE_DIR="build/linux/x64/release/bundle"
           
           # Rename executable to AppRun
           if [ -f "$BUNDLE_DIR/lcr" ]; then
@@ -296,7 +296,7 @@ jobs:
           chmod +x $APPIMAGE_TOOL
           
           # Prepare bundle directory
-          BUNDLE_DIR="build/linux/aarch64/release/bundle"
+          BUNDLE_DIR="build/linux/arm64/release/bundle"
           
           # Rename executable to AppRun
           if [ -f "$BUNDLE_DIR/lcr" ]; then
