@@ -290,7 +290,7 @@ jobs:
         if: steps.check-assets.outputs.skip != 'true'
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.8'
+          flutter-version: '3.29.3'
           channel: 'stable'
       
       - name: Install Rust

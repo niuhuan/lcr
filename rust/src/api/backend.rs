@@ -12,14 +12,11 @@ pub fn desktop_root() -> Result<String> {
     #[cfg(target_os = "windows")]
     {
         use anyhow::Context;
-        Ok(join_paths(vec![
-            std::env::current_exe()?
-                .parent()
-                .with_context(|| "error")?
-                .to_str()
-                .with_context(|| "error")?,
-            "data",
-        ]))
+        let exe_dir = std::env::current_exe()?
+            .parent()
+            .with_context(|| "error")?;
+        let path = exe_dir.join("data");
+        Ok(path.to_str().with_context(|| "error")?.to_string())
     }
     #[cfg(target_os = "macos")]
     {
@@ -43,7 +40,10 @@ pub fn desktop_root() -> Result<String> {
             .to_str()
             .with_context(|| "error")?
             .to_string();
-        Ok(join_paths(vec![home.as_str(), ".niuhuan", "daisy"]))
+        let path = Path::new(&home)
+            .join(".data")
+            .join("LCR");
+        Ok(path.to_str().with_context(|| "error")?.to_string())
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     panic!("未支持的平台")
