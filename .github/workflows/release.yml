@@ -227,8 +227,11 @@ jobs:
             cp linux/appimage/lcr.desktop "$BUNDLE_DIR/"
           fi
           if [ -f "linux/appimage/lcr.png" ]; then
+            # Copy icon to bundle root (AppImage tool expects it here based on Icon=lcr in .desktop)
+            cp linux/appimage/lcr.png "$BUNDLE_DIR/lcr.png"
+            # Also copy to standard icon location
             mkdir -p "$BUNDLE_DIR/usr/share/icons/hicolor/512x512/apps"
-            cp linux/appimage/lcr.png "$BUNDLE_DIR/usr/share/icons/hicolor/512x512/apps/"
+            cp linux/appimage/lcr.png "$BUNDLE_DIR/usr/share/icons/hicolor/512x512/apps/lcr.png"
           fi
           
           # Create AppImage
@@ -308,8 +311,11 @@ jobs:
             cp linux/appimage/lcr.desktop "$BUNDLE_DIR/"
           fi
           if [ -f "linux/appimage/lcr.png" ]; then
+            # Copy icon to bundle root (AppImage tool expects it here based on Icon=lcr in .desktop)
+            cp linux/appimage/lcr.png "$BUNDLE_DIR/lcr.png"
+            # Also copy to standard icon location
             mkdir -p "$BUNDLE_DIR/usr/share/icons/hicolor/512x512/apps"
-            cp linux/appimage/lcr.png "$BUNDLE_DIR/usr/share/icons/hicolor/512x512/apps/"
+            cp linux/appimage/lcr.png "$BUNDLE_DIR/usr/share/icons/hicolor/512x512/apps/lcr.png"
           fi
           
           # Create AppImage
