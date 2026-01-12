@@ -26,7 +26,7 @@
     },
     "import": {
         "title": "導入漫畫",
-        "import_files_button": "導入漫畫(ZIP、CBZ、EPUB)",
+        "import_files_button": "導入漫畫",
         "import_success_comic": "成功導入的漫畫",
         "import_fail_file": "導入失敗的文件",
         "import_folder_button": "導入文件夾內的所有圖片"

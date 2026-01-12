@@ -26,7 +26,7 @@
     },
     "import": {
         "title": "Import Comic",
-        "import_files_button": "Import Comic(ZIP, CBZ, EPUB)",
+        "import_files_button": "Import Comic",
         "import_success_comic": "Successfully imported comic",
         "import_fail_file": "Failed to import file",
         "import_folder_button": "Import all images in folder"

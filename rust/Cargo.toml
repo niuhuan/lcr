@@ -25,6 +25,11 @@ serde = { version = "1.0.219", features = ["derive"] }
 tokio = { version = "1.47.1", features = ["full"] }
 tokio-util = { version = "0.7.16", features = ["io", "io-util"] }
 uuid = { version = "1.18.0", features = ["v4"] }
+sevenz-rust2 = "0.20.1"
+tar = "0.4.44"
+flate2 = "1.1.5"
+xz2 = "0.1.7"
+bzip2 = "0.6.1"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

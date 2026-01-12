@@ -26,7 +26,7 @@
     },
     "import": {
         "title": "导入漫画",
-        "import_files_button": "导入漫画(ZIP、CBZ、EPUB)",
+        "import_files_button": "导入漫画",
         "import_success_comic": "成功导入的漫画",
         "import_fail_file": "导入失败的文件",
         "import_folder_button": "导入文件夹内的所有图片"

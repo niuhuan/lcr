@@ -26,7 +26,7 @@
     },
     "import": {
         "title": "漫画をインポート",
-        "import_files_button": "漫画をインポート(ZIP、CBZ、EPUB)",
+        "import_files_button": "漫画をインポート",
         "import_success_comic": "成功インポートした漫画",
         "import_fail_file": "インポート失敗したファイル",
         "import_folder_button": "フォルダ内のすべての画像をインポート"

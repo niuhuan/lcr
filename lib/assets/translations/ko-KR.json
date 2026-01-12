@@ -26,7 +26,7 @@
     },
     "import": {
         "title": "만화 가져오기",
-        "import_files_button": "만화 가져오기(ZIP、CBZ、EPUB)",
+        "import_files_button": "만화 가져오기",
         "import_success_comic": "성공적으로 가져온 만화",
         "import_fail_file": "가져오기 실패한 파일",
         "import_folder_button": "폴더 내의 모든 이미지 가져오기"

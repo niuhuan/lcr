@@ -21,6 +21,9 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
   final _successIdList = signal<List<ComicInfo>>([]);
   final _failFileList = signal<Map<String, String>>({});
 
+  static const _importFileExtensionsHint =
+      "CBZ ZIP EPUB CB7 7Z CBT TAR TGZ TAR.GZ TAR.XZ TAR.BZ2 TBZ2 TXZ";
+
   @override
   Widget build(BuildContext context) {
     return Watch((context) {
@@ -75,10 +78,31 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
       children: [
         Spacer(),
         _importFilesButton(),
+        SizedBox(height: 8),
+        _importFilesTip(),
         SizedBox(height: 20),
         _importFolderButton(),
         Spacer(),
       ],
+    );
+  }
+
+  Widget _importFilesTip() {
+    final maxWidth = MediaQuery.sizeOf(context).width * 0.7;
+    final color = Theme.of(context).textTheme.bodyMedium?.color;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Opacity(
+        opacity: 0.6,
+        child: Text(
+          _importFileExtensionsHint,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            color: color,
+          ),
+        ),
+      ),
     );
   }
 
@@ -87,7 +111,21 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
       onPressed: () async {
         var result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ["cbz", "zip", "epub"],
+          allowedExtensions: [
+            "cbz",
+            "zip",
+            "epub",
+            "cb7",
+            "7z",
+            "cbt",
+            "tar",
+            "tgz",
+            "gz",
+            "xz",
+            "bz2",
+            "tbz2",
+            "txz",
+          ],
           allowMultiple: true,
         );
         if (result != null) {
@@ -140,7 +178,7 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
           },
           onError: (error) {
             var errorMessage = _extractErrorMessage(error);
-            print("导入失败: $filename - $errorMessage");
+            debugPrint("导入失败: $filename - $errorMessage");
             failFileMap[filename] = errorMessage;
             if (!completeFuture.isCompleted) {
               completeFuture.complete();
@@ -150,7 +188,7 @@ class _ImportComicScreenState extends State<ImportComicScreen> {
         await completeFuture.future;
       } catch (e) {
         var errorMessage = _extractErrorMessage(e);
-        print("导入失败: $filename - $errorMessage");
+        debugPrint("导入失败: $filename - $errorMessage");
         failFileMap[filename] = errorMessage;
       }
     }

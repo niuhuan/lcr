@@ -31,6 +31,7 @@ class CapsuleButton extends StatelessWidget {
       ),
       child: Text(
         text,
+        textAlign: TextAlign.center,
         style: TextStyle(
           color: textColor ?? theme.buttonTheme.colorScheme?.onPrimary,
           fontSize: buttonFontSize,

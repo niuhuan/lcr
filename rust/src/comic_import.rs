@@ -1,7 +1,11 @@
 use crate::database::{self, ComicImageEntity};
 use anyhow::{anyhow, Context};
 use sea_orm::{ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
-use std::{collections::HashMap, path::Path, vec};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    vec,
+};
 use tokio::{fs::File, io::BufReader};
 use tokio_util::compat::Compat;
 
@@ -51,9 +55,29 @@ pub(crate) async fn import_comic(
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_lowercase();
+    let filename_lower = std::path::Path::new(path)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_lowercase();
     let comic = match extension.as_str() {
         "cbz" | "zip" => import_zip(progress_sink, path).await?,
         "epub" => import_epub(progress_sink, path).await?,
+        "cb7" | "7z" => import_7z(progress_sink, path).await?,
+        // NOTE: `.tar.gz`/`.tar.xz`/`.tar.bz2` cannot be determined via `.extension()`;
+        // we also accept them by sniffing the filename and/or content in import_tar_like.
+        "cbt" | "tar" => import_tar_like(progress_sink, path).await?,
+        "tgz" | "gz" | "xz" | "bz2" => {
+            if filename_lower.ends_with(".tar.gz")
+                || filename_lower.ends_with(".tgz")
+                || filename_lower.ends_with(".tar.xz")
+                || filename_lower.ends_with(".tar.bz2")
+            {
+                import_tar_like(progress_sink, path).await?
+            } else {
+                return Err(anyhow::anyhow!("unsupported file type: {}", extension));
+            }
+        }
         _ => {
             return Err(anyhow::anyhow!("unsupported file type: {}", extension));
         }
@@ -163,10 +187,14 @@ impl ResourceReader for ZipResourceReader {
 }
 
 async fn import_folder(progress_sink: ImportNotifer, path: &str) -> anyhow::Result<crate::Comic> {
+    let comic_name = Path::new(path)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
     import_reources(
         progress_sink,
         &mut FolderResourceReader(path.to_string()),
-        path,
+        comic_name,
     )
     .await
 }
@@ -183,23 +211,252 @@ async fn import_zip(progress_sink: ImportNotifer, path: &str) -> anyhow::Result<
         let name = String::from_utf8(name.as_bytes().to_vec())?;
         map.insert(name, index);
     }
+    let comic_name = Path::new(path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
     import_reources(
         progress_sink,
         &mut ZipResourceReader(zip_file_reader, map),
-        path,
+        comic_name,
     )
     .await
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ArchiveType {
+    TarLike,
+    SevenZ,
+}
+
+fn sanitize_relative_path(path: &Path) -> Option<PathBuf> {
+    if path.as_os_str().is_empty() || path.is_absolute() {
+        return None;
+    }
+    let mut out = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(p) => out.push(p),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => return None,
+            std::path::Component::Prefix(_) | std::path::Component::RootDir => return None,
+        }
+    }
+    if out.as_os_str().is_empty() {
+        None
+    } else {
+        Some(out)
+    }
+}
+
+fn sanitize_relative_path_str(name: &str) -> Option<PathBuf> {
+    let name = name.replace('\\', "/");
+    sanitize_relative_path(Path::new(name.as_str()))
+}
+
+fn derive_comic_name_from_archive_path(path: &Path) -> String {
+    let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("unknown");
+    let filename_lower = filename.to_lowercase();
+    let known_suffixes = [
+        ".tar.gz",
+        ".tar.xz",
+        ".tar.bz2",
+        ".tgz",
+        ".tbz2",
+        ".txz",
+        ".cbt",
+        ".tar",
+        ".cb7",
+        ".7z",
+        ".zip",
+        ".cbz",
+        ".epub",
+    ];
+    for suffix in known_suffixes {
+        if filename_lower.ends_with(suffix) {
+            let cut = filename.len().saturating_sub(suffix.len());
+            let trimmed = filename[..cut].to_string();
+            if !trimmed.is_empty() {
+                return trimmed;
+            }
+        }
+    }
+    path.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown")
+        .to_string()
+}
+
+async fn import_tar_like(progress_sink: ImportNotifer, path: &str) -> anyhow::Result<crate::Comic> {
+    import_archive_extract_then_import(progress_sink, path, ArchiveType::TarLike).await
+}
+
+async fn import_7z(progress_sink: ImportNotifer, path: &str) -> anyhow::Result<crate::Comic> {
+    import_archive_extract_then_import(progress_sink, path, ArchiveType::SevenZ).await
+}
+
+async fn import_archive_extract_then_import(
+    progress_sink: ImportNotifer,
+    path: &str,
+    archive_type: ArchiveType,
+) -> anyhow::Result<crate::Comic> {
+    let source_path = PathBuf::from(path);
+    let comic_name = derive_comic_name_from_archive_path(source_path.as_path());
+    let base_dir = Path::new(COMIC_DIR.get().unwrap()).join("tmp_import");
+    tokio::fs::create_dir_all(base_dir.as_path()).await?;
+    let extract_dir = base_dir.join(uuid::Uuid::new_v4().to_string());
+    tokio::fs::create_dir_all(extract_dir.as_path()).await?;
+
+    progress_sink.add(format!(
+        "Extracting : {}",
+        source_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or(path)
+    ))?;
+
+    let extract_dir_clone = extract_dir.clone();
+    let source_path_clone = source_path.clone();
+    let extract_result = tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+        match archive_type {
+            ArchiveType::TarLike => {
+                extract_tar_like(source_path_clone.as_path(), extract_dir_clone.as_path())
+            }
+            ArchiveType::SevenZ => extract_7z(source_path_clone.as_path(), extract_dir_clone.as_path()),
+        }
+    })
+    .await?;
+
+    if let Err(err) = extract_result {
+        let _ = tokio::fs::remove_dir_all(extract_dir.as_path()).await;
+        return Err(err);
+    }
+
+    let result = import_reources(
+        progress_sink,
+        &mut FolderResourceReader(extract_dir.to_string_lossy().to_string()),
+        comic_name.as_str(),
+    )
+    .await;
+
+    let _ = tokio::fs::remove_dir_all(extract_dir.as_path()).await;
+    result
+}
+
+fn extract_tar_like(source_path: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+    use std::io::Read;
+
+    #[derive(Clone, Copy, Debug)]
+    enum Compression {
+        None,
+        Gzip,
+        Xz,
+        Bzip2,
+    }
+
+    let filename_lower = source_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let mut magic = [0u8; 6];
+    if let Ok(mut f) = std::fs::File::open(source_path) {
+        let _ = f.read(&mut magic);
+    }
+    let mut compression = if magic.starts_with(&[0x1F, 0x8B]) {
+        Compression::Gzip
+    } else if magic.starts_with(b"BZh") {
+        Compression::Bzip2
+    } else if magic == [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00] {
+        Compression::Xz
+    } else {
+        Compression::None
+    };
+
+    if matches!(compression, Compression::None) {
+        if filename_lower.ends_with(".gz") || filename_lower.ends_with(".tgz") {
+            compression = Compression::Gzip;
+        } else if filename_lower.ends_with(".xz") || filename_lower.ends_with(".txz") {
+            compression = Compression::Xz;
+        } else if filename_lower.ends_with(".bz2") || filename_lower.ends_with(".tbz2") {
+            compression = Compression::Bzip2;
+        }
+    }
+
+    let file = std::fs::File::open(source_path)?;
+    let reader: Box<dyn Read> = match compression {
+        Compression::None => Box::new(file),
+        Compression::Gzip => Box::new(flate2::read::GzDecoder::new(file)),
+        Compression::Xz => Box::new(xz2::read::XzDecoder::new(file)),
+        Compression::Bzip2 => Box::new(bzip2::read::BzDecoder::new(file)),
+    };
+
+    let mut archive = tar::Archive::new(reader);
+    for entry in archive.entries()? {
+        let mut entry = entry?;
+        let entry_type = entry.header().entry_type();
+        let entry_path = entry.path()?;
+        let rel = match sanitize_relative_path(entry_path.as_ref()) {
+            Some(p) => p,
+            None => continue,
+        };
+        let out_path = dest_dir.join(rel);
+
+        if entry_type.is_dir() {
+            std::fs::create_dir_all(out_path)?;
+            continue;
+        }
+        if !entry_type.is_file() {
+            continue;
+        }
+        if let Some(parent) = out_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut out = std::fs::File::create(out_path)?;
+        std::io::copy(&mut entry, &mut out)?;
+    }
+    Ok(())
+}
+
+fn extract_7z(source_path: &Path, dest_dir: &Path) -> anyhow::Result<()> {
+    use std::io::BufWriter;
+    use sevenz_rust2::Error;
+
+    let base = dest_dir.to_path_buf();
+    sevenz_rust2::decompress_file_with_extract_fn(source_path, dest_dir, move |entry, reader, _| {
+        let rel = match sanitize_relative_path_str(entry.name()) {
+            Some(p) => p,
+            None => return Ok(false),
+        };
+        let out_path = base.join(rel);
+        if entry.is_directory() {
+            std::fs::create_dir_all(&out_path).map_err(Error::from)?;
+            return Ok(true);
+        }
+        if let Some(parent) = out_path.parent() {
+            std::fs::create_dir_all(parent).map_err(Error::from)?;
+        }
+        let file = std::fs::File::create(&out_path)
+            .map_err(|e| Error::FileOpen(e, out_path.to_string_lossy().to_string()))?;
+        if entry.size() > 0 {
+            let mut writer = BufWriter::new(file);
+            std::io::copy(reader, &mut writer).map_err(Error::from)?;
+        } else {
+            let _ = file;
+        }
+        Ok(true)
+    })
+    .map_err(|e| anyhow!("{e:?}"))?;
+
+    Ok(())
 }
 
 async fn import_reources(
     progress_sink: ImportNotifer,
     reader: &mut impl ResourceReader,
-    path: &str,
+    comic_name: &str,
 ) -> anyhow::Result<crate::Comic> {
-    let comic_name = Path::new(path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("unknown");
     let comic_id = ComicEntity::create_comic(comic_name).await?;
     let comic_folder = Path::new(COMIC_DIR.get().unwrap()).join(comic_id.as_str());
     let mut next_chapter_index = 1;
@@ -374,6 +631,72 @@ async fn loop_into_comic(
     Ok(())
 }
 
+fn strip_leading_slash(path: &str) -> &str {
+    path.strip_prefix('/').unwrap_or(path)
+}
+
+fn join_epub_path(base_dir: &str, rel: &str) -> String {
+    let rel = strip_leading_slash(rel);
+    let mut parts: Vec<&str> = Vec::new();
+    if !base_dir.is_empty() {
+        for part in base_dir.split('/') {
+            if !part.is_empty() && part != "." {
+                parts.push(part);
+            }
+        }
+    }
+    for part in rel.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                let _ = parts.pop();
+            }
+            _ => parts.push(part),
+        }
+    }
+    parts.join("/")
+}
+
+fn parse_container_xml_for_opf(container_xml: &str) -> Option<String> {
+    let doc = roxmltree::Document::parse(container_xml).ok()?;
+    let root = doc.root_element();
+    for node in root.descendants() {
+        if node.tag_name().name() == "rootfile" {
+            if let Some(full_path) = node.attribute("full-path") {
+                let full_path = strip_leading_slash(full_path).to_string();
+                if !full_path.is_empty() {
+                    return Some(full_path);
+                }
+            }
+        }
+    }
+    None
+}
+
+async fn resolve_epub_opf_path(
+    mutreader: &mut async_zip::tokio::read::seek::ZipFileReader<BufReader<File>>,
+    map: &HashMap<String, usize>,
+) -> anyhow::Result<String> {
+    if let Some(idx) = map.get("META-INF/container.xml") {
+        let mut reader = mutreader.reader_with_entry(*idx).await?;
+        let mut data = vec![];
+        reader.read_to_end_checked(&mut data).await?;
+        if let Ok(container_xml) = String::from_utf8(data) {
+            if let Some(opf_path) = parse_container_xml_for_opf(&container_xml) {
+                if map.contains_key(&opf_path) {
+                    return Ok(opf_path);
+                }
+            }
+        }
+    }
+    if map.contains_key("content.opf") {
+        return Ok("content.opf".to_string());
+    }
+    Err(anyhow!(
+        "OPF not found (container.xml missing/invalid, and content.opf not present)"
+    ))
+}
+
 async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result<crate::Comic> {
     // 以zip方式打开epub
     let file = tokio::fs::File::open(path).await?;
@@ -398,9 +721,16 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
     let mut page_id_list = vec![];
     let mut source_href_chapter_title_map = HashMap::new();
     //
+    let opf_path = resolve_epub_opf_path(&mut zip_file_reader, &map).await?;
+    let opf_dir = Path::new(opf_path.as_str())
+        .parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or("")
+        .trim_matches('/')
+        .to_string();
     let content_opf_idx = map
-        .get("content.opf")
-        .with_context(|| anyhow!("content.opf not found"))?;
+        .get(opf_path.as_str())
+        .with_context(|| anyhow!("OPF not found in zip map: {}", opf_path))?;
     let mut content_opf_reader = zip_file_reader.reader_with_entry(*content_opf_idx).await?;
     let mut content_opf_data = vec![];
     content_opf_reader
@@ -409,6 +739,8 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
     let content_opf = String::from_utf8(content_opf_data)?;
     let doc = roxmltree::Document::parse(&content_opf)?;
     let children = doc.root_element().children();
+    let mut toc_candidate: Option<String> = None;
+    let mut spine_toc_id: Option<String> = None;
     for ele in children {
         if ele.tag_name().name().eq("metadata") {
             for meta in ele.children() {
@@ -435,14 +767,23 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
                 if item.tag_name().name().eq("item") {
                     let id = item.attribute("id").unwrap_or("");
                     let href = item.attribute("href").unwrap_or("");
-                    // let media_type = item.attribute("media-type").unwrap_or("");
+                    let media_type = item.attribute("media-type").unwrap_or("");
                     if !id.is_empty() && !href.is_empty() {
+                        let href = join_epub_path(opf_dir.as_str(), href);
                         resource_href_id_map.insert(href.to_string(), id.to_string());
                         resource_id_href_map.insert(id.to_string(), href.to_string());
+                        if media_type == "application/x-dtbncx+xml" {
+                            toc_candidate = Some(href);
+                        }
                     }
                 }
             }
         } else if ele.tag_name().name().eq("spine") {
+            if let Some(toc) = ele.attribute("toc") {
+                if !toc.is_empty() {
+                    spine_toc_id = Some(toc.to_string());
+                }
+            }
             for itemref in ele.children() {
                 if itemref.tag_name().name().eq("itemref") {
                     let idref = itemref.attribute("idref").unwrap_or("");
@@ -457,7 +798,23 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
     // if identifier.is_empty() || identifier.eq("unknown") || !id_regex.is_match(&identifier) {
     let identifier = uuid::Uuid::new_v4().to_string();
     // }
-    if let Some(toc_ncx_idx) = map.get("toc.ncx") {
+    let toc_path = spine_toc_id
+        .and_then(|toc_id| resource_id_href_map.get(&toc_id).cloned())
+        .or(toc_candidate)
+        .or_else(|| {
+            if !opf_dir.is_empty() {
+                let p = join_epub_path(opf_dir.as_str(), "toc.ncx");
+                if map.contains_key(p.as_str()) {
+                    return Some(p);
+                }
+            }
+            if map.contains_key("toc.ncx") {
+                return Some("toc.ncx".to_string());
+            }
+            None
+        });
+    if let Some(toc_path) = toc_path {
+        if let Some(toc_ncx_idx) = map.get(toc_path.as_str()) {
         let mut toc_ncx_reader = zip_file_reader.reader_with_entry(*toc_ncx_idx).await?;
         let mut toc_ncx_data = vec![];
         toc_ncx_reader
@@ -465,6 +822,12 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
             .await?;
         let toc_ncx = String::from_utf8(toc_ncx_data)?;
         let doc = roxmltree::Document::parse(&toc_ncx)?;
+        let toc_dir = Path::new(toc_path.as_str())
+            .parent()
+            .and_then(|p| p.to_str())
+            .unwrap_or("")
+            .trim_matches('/')
+            .to_string();
         let children = doc.root_element().children();
         for ele in children {
             if ele.tag_name().name().eq("navMap") {
@@ -510,6 +873,8 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
                                         .unwrap_or("unknown")
                                         .to_string();
                                 }
+                                content_src =
+                                    join_epub_path(toc_dir.as_str(), content_src.as_str());
                                 if !nav_label.is_empty()
                                     && !nav_label.eq("unknown")
                                     && !content_src.is_empty()
@@ -528,6 +893,7 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
                                 .unwrap_or("unknown")
                                 .to_string();
                         }
+                        content_src = join_epub_path(toc_dir.as_str(), content_src.as_str());
                         if !nav_label.is_empty()
                             && !nav_label.eq("unknown")
                             && !content_src.is_empty()
@@ -540,6 +906,9 @@ async fn import_epub(progress_sink: ImportNotifer, path: &str) -> anyhow::Result
                     }
                 }
             }
+        }
+        } else {
+            println!("toc.ncx path not found in zip: {}", toc_path);
         }
     } else {
         println!("toc.ncx not found");
@@ -765,6 +1134,36 @@ async fn import_epub2(
 
 #[cfg(test)]
 mod tests {
+    use super::{join_epub_path, parse_container_xml_for_opf};
+
+    #[test]
+    fn test_join_epub_path() {
+        assert_eq!(join_epub_path("", "content.opf"), "content.opf");
+        assert_eq!(
+            join_epub_path("OEBPS", "Text/001.xhtml"),
+            "OEBPS/Text/001.xhtml"
+        );
+        assert_eq!(
+            join_epub_path("OEBPS/Text", "../Images/1.jpg"),
+            "OEBPS/Images/1.jpg"
+        );
+        assert_eq!(join_epub_path("OEBPS", "./toc.ncx"), "OEBPS/toc.ncx");
+        assert_eq!(join_epub_path("OEBPS", "/toc.ncx"), "OEBPS/toc.ncx");
+    }
+
+    #[test]
+    fn test_parse_container_xml_for_opf() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>"#;
+        assert_eq!(
+            parse_container_xml_for_opf(xml).as_deref(),
+            Some("OEBPS/content.opf")
+        );
+    }
 
     #[tokio::test]
     async fn remove_database() {
